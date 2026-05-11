@@ -9,6 +9,7 @@ import { QuizPage } from '@/pages/QuizPage';
 import { RoadmapPage } from '@/pages/RoadmapPage';
 import { ComparePage } from '@/pages/ComparePage';
 import { BookmarksPage } from '@/pages/BookmarksPage';
+import { ClaudeInternalsPage } from '@/pages/ClaudeInternalsPage';
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/roadmap" element={<RoadmapPage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/bookmarks" element={<BookmarksPage />} />
+          <Route path="/internals" element={<ClaudeInternalsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

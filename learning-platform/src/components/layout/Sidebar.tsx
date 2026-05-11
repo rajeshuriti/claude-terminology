@@ -20,6 +20,7 @@ const navItems = [
   { path: '/roadmap', icon: Map, label: 'Study Roadmaps' },
   { path: '/compare', icon: ArrowLeftRight, label: 'Compare Concepts' },
   { path: '/bookmarks', icon: Bookmark, label: 'Bookmarks' },
+  { path: '/internals', icon: null, label: 'Claude Internals', emoji: '⚙️', isNew: true },
 ];
 
 function SidebarContent({ onClose }: { onClose: () => void }) {
@@ -71,7 +72,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto p-3 space-y-1">
         <div className={`text-xs font-semibold uppercase tracking-wider mb-2 px-2 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Navigation</div>
-        {navItems.map(({ path, icon: Icon, label }) => (
+        {navItems.map(({ path, icon: Icon, label, emoji, isNew } : { path: string; icon: typeof LayoutDashboard | null; label: string; emoji?: string; isNew?: boolean }) => (
           <NavLink
             key={path}
             to={path}
@@ -80,15 +81,18 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
                 isActive
-                  ? 'bg-sky-500 text-white shadow-sm'
+                  ? path === '/internals'
+                    ? 'bg-gradient-to-r from-violet-600 to-sky-500 text-white shadow-sm'
+                    : 'bg-sky-500 text-white shadow-sm'
                   : darkMode
                     ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`
             }
           >
-            <Icon size={16} />
+            {emoji ? <span className="text-base leading-none">{emoji}</span> : Icon ? <Icon size={16} /> : null}
             {label}
+            {isNew && <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-violet-500/30 text-violet-300 font-bold" style={{ fontSize: 9 }}>NEW</span>}
           </NavLink>
         ))}
 
