@@ -1,0 +1,6 @@
+{
+  "installCommand": "cd learning-platform && npm install",
+  "buildCommand": "cd learning-platform && npm run build",
+  "outputDirectory": "learning-platform/dist",
+  "framework": null
+}
