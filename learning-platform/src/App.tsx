@@ -11,6 +11,7 @@ import { ComparePage } from '@/pages/ComparePage';
 import { BookmarksPage } from '@/pages/BookmarksPage';
 import { ClaudeInternalsPage } from '@/pages/ClaudeInternalsPage';
 import { SlashCommandsStudioPage } from '@/pages/SlashCommandsStudioPage';
+import { CertificationPracticePage } from '@/pages/CertificationPracticePage';
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/bookmarks" element={<BookmarksPage />} />
           <Route path="/internals" element={<ClaudeInternalsPage />} />
           <Route path="/commands" element={<SlashCommandsStudioPage />} />
+          <Route path="/certification" element={<CertificationPracticePage />} />
         </Route>
       </Routes>
     </BrowserRouter>
