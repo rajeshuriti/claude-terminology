@@ -47,7 +47,8 @@ export function BookmarksPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className={`rounded-2xl border p-4 ${cardBg}`}
+                  onClick={() => { addRecentlyViewed(concept.id); navigate(`/concept/${concept.id}`); }}
+                  className={`rounded-2xl border p-4 cursor-pointer hover:shadow-md transition-shadow ${cardBg}`}
                 >
                   <div className="flex items-start gap-3">
                     <div
@@ -63,17 +64,12 @@ export function BookmarksPage() {
                     </div>
                     <div className="flex flex-col gap-1 shrink-0">
                       <button
-                        onClick={() => toggleBookmark(concept.id)}
+                        onClick={(e) => { e.stopPropagation(); toggleBookmark(concept.id); }}
                         className="p-1.5 text-amber-500 hover:text-amber-400 transition-colors"
                       >
                         <Bookmark size={14} fill="currentColor" />
                       </button>
-                      <button
-                        onClick={() => { addRecentlyViewed(concept.id); navigate(`/concept/${concept.id}`); }}
-                        className={`p-1.5 transition-colors ${textMuted} hover:text-sky-500`}
-                      >
-                        <ArrowRight size={14} />
-                      </button>
+                      <ArrowRight size={14} className={`mt-1.5 mx-1.5 ${textMuted}`} />
                     </div>
                   </div>
                 </motion.div>

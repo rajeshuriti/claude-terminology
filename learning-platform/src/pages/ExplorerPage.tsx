@@ -34,7 +34,8 @@ function ConceptCard({ concept }: { concept: Concept }) {
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl border transition-shadow hover:shadow-md ${
+      onClick={handleNavigate}
+      className={`rounded-2xl border transition-shadow hover:shadow-md cursor-pointer ${
         darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'
       } ${isCompleted ? (darkMode ? 'border-emerald-700/50' : 'border-emerald-200') : ''}`}
     >
@@ -141,17 +142,14 @@ function ConceptCard({ concept }: { concept: Concept }) {
       {/* Footer */}
       <div className={`flex items-center justify-between px-4 py-2.5 border-t ${darkMode ? 'border-slate-700' : 'border-slate-50'}`}>
         <button
-          onClick={() => setExpanded(!expanded)}
+          onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
           className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-700'}`}
         >
           {expanded ? <><ChevronUp size={14} /> Collapse</> : <><ChevronDown size={14} /> Show details</>}
         </button>
-        <button
-          onClick={handleNavigate}
-          className="flex items-center gap-1.5 text-xs font-medium text-sky-500 hover:text-sky-400 transition-colors"
-        >
+        <span className="flex items-center gap-1.5 text-xs font-medium text-sky-500">
           Full view <ArrowRight size={12} />
-        </button>
+        </span>
       </div>
     </motion.div>
   );
