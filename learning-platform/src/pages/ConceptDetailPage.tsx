@@ -11,7 +11,7 @@ import { conceptMap, concepts } from '@/data/concepts';
 import { categoryMap } from '@/data/categories';
 import { useAppStore } from '@/store/appStore';
 import { enrichedContent, generateFallbackContent } from '@/data/enrichedConceptContent';
-import type { EnrichedContent } from '@/data/enrichedConceptContent';
+import type { EnrichedContent, RichAnalogy, ModeEntry } from '@/data/enrichedConceptContent';
 
 // ─── Simulators ───────────────────────────────────────────────────────────────
 
@@ -415,6 +415,133 @@ function UnderstandTab({ content, dm }: { content: EnrichedContent; dm: boolean 
   );
 }
 
+// ─── Mode Table ───────────────────────────────────────────────────────────────
+
+function ModeTable({ modes, dm }: { modes: ModeEntry[]; dm: boolean }) {
+  return (
+    <div className={`rounded-2xl border overflow-hidden ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+      <div className={`px-4 py-3 border-b text-xs font-semibold uppercase tracking-wide ${dm ? 'bg-slate-900 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
+        Modes &amp; Values
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className={`border-b text-xs font-semibold ${dm ? 'border-slate-700' : 'border-slate-100'}`}>
+              <td className={`px-4 py-2.5 ${dm ? 'text-sky-400' : 'text-sky-600'}`}>Value</td>
+              <td className={`px-4 py-2.5 ${dm ? 'text-slate-400' : 'text-slate-500'}`}>What it means</td>
+              <td className={`px-4 py-2.5 ${dm ? 'text-amber-400' : 'text-amber-600'}`}>School analogy</td>
+            </tr>
+          </thead>
+          <tbody>
+            {modes.map((m, i) => (
+              <tr key={i} className={`border-b last:border-0 ${dm ? 'border-slate-700' : 'border-slate-50'}`}>
+                <td className={`px-4 py-3 font-mono text-xs font-semibold whitespace-nowrap align-top ${dm ? 'text-sky-300' : 'text-sky-700'}`}>{m.value}</td>
+                <td className={`px-4 py-3 text-xs leading-relaxed align-top ${dm ? 'text-slate-200' : 'text-slate-700'}`}>{m.meaning}</td>
+                <td className={`px-4 py-3 text-xs leading-relaxed align-top ${dm ? 'text-amber-200' : 'text-amber-800'}`}>{m.schoolBehavior}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Rich Analogy Card ────────────────────────────────────────────────────────
+
+function RichAnalogyCard({ analogy, dm }: { analogy: RichAnalogy; dm: boolean }) {
+  const [expanded, setExpanded] = useState<Set<number>>(new Set([0]));
+  const toggle = (i: number) => setExpanded(prev => {
+    const next = new Set(prev);
+    if (next.has(i)) next.delete(i); else next.add(i);
+    return next;
+  });
+
+  const isEnterprise = !['School', 'Library', 'Hospital', 'Airport', 'Restaurant'].includes(analogy.domain);
+
+  return (
+    <div className={`rounded-2xl border overflow-hidden ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+      {/* Header */}
+      <div className={`px-5 py-4 border-b ${
+        isEnterprise
+          ? dm ? 'bg-gradient-to-r from-violet-900/30 to-sky-900/20 border-violet-700/30' : 'bg-gradient-to-r from-violet-50 to-sky-50 border-violet-200'
+          : dm ? 'bg-gradient-to-r from-amber-900/20 to-emerald-900/20 border-amber-700/20' : 'bg-gradient-to-r from-amber-50 to-emerald-50 border-amber-200'
+      }`}>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-2xl">{analogy.emoji}</span>
+          <span className={`text-sm font-bold ${dm ? 'text-white' : 'text-slate-900'}`}>
+            {analogy.domain} Analogy
+          </span>
+          <span className={`text-xs px-2 py-0.5 rounded-full ml-auto font-medium ${
+            isEnterprise
+              ? dm ? 'bg-violet-900/40 text-violet-300' : 'bg-violet-100 text-violet-700'
+              : dm ? 'bg-amber-900/40 text-amber-300' : 'bg-amber-100 text-amber-700'
+          }`}>{isEnterprise ? 'Enterprise' : 'Everyday'}</span>
+        </div>
+        <p className={`text-xs leading-relaxed ${dm ? 'text-slate-300' : 'text-slate-600'}`}>{analogy.setting}</p>
+      </div>
+
+      {/* Character Mapping */}
+      <div className={`px-5 py-3 border-b ${dm ? 'border-slate-700' : 'border-slate-100'}`}>
+        <div className={`text-xs font-semibold uppercase tracking-wide mb-2 ${dm ? 'text-slate-500' : 'text-slate-400'}`}>Character Mapping</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          {analogy.characters.map((c, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs">
+              <span className={`font-semibold shrink-0 ${dm ? 'text-sky-300' : 'text-sky-700'}`}>{c.role}</span>
+              <span className={dm ? 'text-slate-500' : 'text-slate-400'}>→</span>
+              <span className={dm ? 'text-slate-300' : 'text-slate-600'}>{c.represents}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Scenarios */}
+      <div className="divide-y" style={{ borderColor: dm ? '#334155' : '#f1f5f9' }}>
+        {analogy.scenarios.map((s, i) => (
+          <div key={i}>
+            <button onClick={() => toggle(i)} className={`w-full flex items-start gap-3 px-5 py-3.5 text-left transition-colors ${dm ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50/80'}`}>
+              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-lg shrink-0 mt-0.5 ${dm ? 'bg-slate-700 text-sky-300' : 'bg-slate-100 text-sky-700'}`}>
+                {i + 1}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className={`text-xs font-semibold mb-0.5 ${dm ? 'text-white' : 'text-slate-900'}`}>{s.mode}</div>
+                {!expanded.has(i) && (
+                  <div className={`text-xs truncate ${dm ? 'text-slate-400' : 'text-slate-500'}`}>{s.behavior}</div>
+                )}
+              </div>
+              <ChevronDown size={14} className={`shrink-0 mt-1 transition-transform ${dm ? 'text-slate-500' : 'text-slate-400'} ${expanded.has(i) ? 'rotate-180' : ''}`} />
+            </button>
+            {expanded.has(i) && (
+              <div className={`px-5 pb-4 space-y-2`}>
+                <div className={`text-xs rounded-xl p-3 leading-relaxed ${dm ? 'bg-slate-700/60 text-slate-200' : 'bg-slate-50 text-slate-700'}`}>
+                  <span className={`font-semibold ${dm ? 'text-slate-400' : 'text-slate-500'}`}>What happens: </span>
+                  {s.behavior}
+                </div>
+                <div className={`text-xs rounded-xl p-3 leading-relaxed ${
+                  s.consequence.toLowerCase().includes('fail') || s.consequence.toLowerCase().includes('wrong') || s.consequence.toLowerCase().includes('break') || s.consequence.toLowerCase().includes('error')
+                    ? dm ? 'bg-rose-900/20 text-rose-200 border border-rose-700/30' : 'bg-rose-50 text-rose-800 border border-rose-200'
+                    : dm ? 'bg-emerald-900/20 text-emerald-200 border border-emerald-700/30' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                }`}>
+                  <span className="font-semibold">Consequence: </span>
+                  {s.consequence}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Takeaway */}
+      <div className={`px-5 py-3 border-t ${dm ? 'border-slate-700 bg-slate-900/50' : 'border-slate-100 bg-slate-50'}`}>
+        <span className={`text-xs font-semibold ${dm ? 'text-amber-400' : 'text-amber-600'}`}>Takeaway: </span>
+        <span className={`text-xs leading-relaxed ${dm ? 'text-slate-300' : 'text-slate-600'}`}>{analogy.takeaway}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Real World Tab ───────────────────────────────────────────────────────────
+
 function RealWorldTab({ content, dm }: { content: EnrichedContent; dm: boolean }) {
   const typeConfig = {
     enterprise: { label: 'Enterprise', color: '#0ea5e9' },
@@ -423,40 +550,64 @@ function RealWorldTab({ content, dm }: { content: EnrichedContent; dm: boolean }
     failure: { label: 'Failure Mode', color: '#f43f5e' },
   };
 
-  if (content.realWorldScenarios.length === 0) {
-    return (
-      <div className={`rounded-2xl border p-8 text-center text-sm ${dm ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'}`}>
-        No scenarios available for this concept yet.
-      </div>
-    );
-  }
+  const hasAnalogies = !!content.primaryAnalogy || !!content.enterpriseAnalogy;
+  const hasModes = !!content.modesTable && content.modesTable.length > 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {content.realWorldScenarios.map((scenario, i) => {
-        const cfg = typeConfig[scenario.type];
-        return (
-          <div key={i} className={`rounded-2xl border p-5 ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-            <div className="flex items-start justify-between gap-2 mb-3">
-              <span className={`text-sm font-semibold ${dm ? 'text-white' : 'text-slate-900'}`}>{scenario.title}</span>
-              <span className="text-xs px-2 py-0.5 rounded-full shrink-0 font-medium"
-                style={{ backgroundColor: `${cfg.color}20`, color: cfg.color, border: `1px solid ${cfg.color}40` }}>
-                {cfg.label}
-              </span>
+    <div className="space-y-5">
+      {/* Mode Table */}
+      {hasModes && <ModeTable modes={content.modesTable!} dm={dm} />}
+
+      {/* Analogies */}
+      {hasAnalogies && (
+        <div className="space-y-4">
+          {content.primaryAnalogy && <RichAnalogyCard analogy={content.primaryAnalogy} dm={dm} />}
+          {content.enterpriseAnalogy && <RichAnalogyCard analogy={content.enterpriseAnalogy} dm={dm} />}
+        </div>
+      )}
+
+      {/* Production Scenarios */}
+      {content.realWorldScenarios.length > 0 && (
+        <div>
+          {hasAnalogies && (
+            <div className={`text-xs font-semibold uppercase tracking-wide mb-3 ${dm ? 'text-slate-400' : 'text-slate-500'}`}>
+              Production Scenarios
             </div>
-            <p className={`text-xs mb-3 leading-relaxed ${dm ? 'text-slate-400' : 'text-slate-500'}`}>{scenario.context}</p>
-            <div className="space-y-2">
-              <div>
-                <span className={`text-xs font-semibold uppercase ${dm ? 'text-slate-500' : 'text-slate-400'}`}>How: </span>
-                <span className={`text-xs ${dm ? 'text-slate-300' : 'text-slate-600'}`}>{scenario.how}</span>
-              </div>
-              <div className={`text-xs rounded-lg p-2.5 ${dm ? 'bg-slate-700 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
-                <span className="font-semibold">Outcome: </span>{scenario.outcome}
-              </div>
-            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {content.realWorldScenarios.map((scenario, i) => {
+              const cfg = typeConfig[scenario.type];
+              return (
+                <div key={i} className={`rounded-2xl border p-5 ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <span className={`text-sm font-semibold ${dm ? 'text-white' : 'text-slate-900'}`}>{scenario.title}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full shrink-0 font-medium"
+                      style={{ backgroundColor: `${cfg.color}20`, color: cfg.color, border: `1px solid ${cfg.color}40` }}>
+                      {cfg.label}
+                    </span>
+                  </div>
+                  <p className={`text-xs mb-3 leading-relaxed ${dm ? 'text-slate-400' : 'text-slate-500'}`}>{scenario.context}</p>
+                  <div className="space-y-2">
+                    <div>
+                      <span className={`text-xs font-semibold uppercase ${dm ? 'text-slate-500' : 'text-slate-400'}`}>How: </span>
+                      <span className={`text-xs ${dm ? 'text-slate-300' : 'text-slate-600'}`}>{scenario.how}</span>
+                    </div>
+                    <div className={`text-xs rounded-lg p-2.5 ${dm ? 'bg-slate-700 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
+                      <span className="font-semibold">Outcome: </span>{scenario.outcome}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
+        </div>
+      )}
+
+      {!hasAnalogies && content.realWorldScenarios.length === 0 && (
+        <div className={`rounded-2xl border p-8 text-center text-sm ${dm ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'}`}>
+          No scenarios available for this concept yet.
+        </div>
+      )}
     </div>
   );
 }
