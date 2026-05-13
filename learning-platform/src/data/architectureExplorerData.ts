@@ -700,3 +700,985 @@ export const archPatterns: ArchPattern[] = [
     category: 'Architecture',
   },
 ];
+
+// ── Deep educational content per node ────────────────────────────────────────
+
+export interface SampleFile {
+  name: string;
+  description: string;
+  content: string;
+}
+
+export interface DeepWorkflowStep {
+  actor: string;
+  action: string;
+  detail?: string;
+}
+
+export interface DeepNodeContent {
+  sampleFiles: SampleFile[];
+  claudeUsage: string;
+  workflow: DeepWorkflowStep[];
+  keyInsight: string;
+  goodPattern: { title: string; content: string; explanation: string };
+  antiPattern: { title: string; content: string; consequence: string; fix: string };
+}
+
+export interface LearningStep {
+  stepNum: number;
+  nodeId: string;
+  title: string;
+  estimatedTime: string;
+  lesson: string;
+  keyTakeaway: string;
+  question: string;
+  answer: string;
+}
+
+const B = '\`\`\`'; // triple backtick helper — avoids escaping inside template literals
+
+export const nodeDeepContent: Partial<Record<string, DeepNodeContent>> = {
+
+  'claude-md': {
+    sampleFiles: [
+      {
+        name: 'CLAUDE.md',
+        description: 'Global intelligence contract — loaded by Claude at every session start',
+        content: `# CLAUDE.md
+
+This file provides guidance to Claude Code when working with code in this repository.
+
+## Commands
+
+${B}bash
+npm run dev       # start Vite dev server (HMR)
+npm run build     # tsc -b && vite build (full type-check + bundle)
+npm run lint      # eslint on all source files
+npx tsc --noEmit  # fast type-check without building — use after every edit
+${B}
+
+There are no tests. Run \`npx tsc --noEmit\` after every change.
+
+## Architecture
+
+### Stack
+- React 19 + Vite 8 — SPA, no SSR
+- TypeScript strict (verbatimModuleSyntax, noUnusedLocals, noUnusedParameters)
+- Tailwind CSS v4 via @tailwindcss/vite (no tailwind.config.js)
+- Framer Motion — motion.div + AnimatePresence throughout
+- Zustand with persist — single store at src/store/appStore.ts
+- React Router v7 — all routes in src/App.tsx
+
+### Path alias
+\`@/\` resolves to \`src/\`. Use for all imports within src/.
+
+## Rules Reference
+See .claude/rules/ for detailed constraints:
+- typescript.md — verbatimModuleSyntax, noUnusedLocals rules
+- dark-mode.md — dm prop pattern, tw() utility, inline styles
+- components.md — SectionLabel, Badge, CollapsibleSection API
+
+## Deployment
+vercel.json lives at the REPO ROOT, not inside learning-platform/.
+Vercel runs: \`cd learning-platform && npm install && npm run build\``,
+      },
+    ],
+    claudeUsage: 'Claude Code auto-reads CLAUDE.md at the start of every session — before any task begins. It is injected as persistent background context. Every command Claude runs, every TypeScript pattern it follows, every architectural decision it makes is shaped by what is written here. Think of it as the session initialization script.',
+    workflow: [
+      { actor: 'Engineer', action: 'Opens Claude Code in the project directory' },
+      { actor: 'Claude Code', action: 'Automatically reads CLAUDE.md on startup' },
+      { actor: 'Claude', action: 'Absorbs: build commands, TypeScript constraints, path aliases, deployment notes' },
+      { actor: 'Engineer', action: 'Asks: "fix the TypeScript error on line 42"' },
+      { actor: 'Claude', action: 'Already knows: run npx tsc --noEmit, use import type, never rename to _x' },
+      { actor: 'Result', action: 'Correct fix applied without explaining project context — every single time' },
+    ],
+    keyInsight: 'CLAUDE.md is not documentation. It is the session initialization contract. Time invested in making it accurate and specific is multiplied across every future Claude interaction in the project.',
+    goodPattern: {
+      title: 'Specific commands + architecture facts + rules references',
+      content: `## Commands\nnpm run dev\nnpx tsc --noEmit  # run after every change\n\n## Path alias\n@/ → src/\n\n## TypeScript\nverbatimModuleSyntax: use import type for all types\nnoUnusedLocals: DELETE unused vars — never rename to _x\n\n## Deployment\nvercel.json at REPO ROOT, not inside learning-platform/`,
+      explanation: 'Commands listed first — Claude runs these immediately. Architecture facts prevent re-discovery. Rules references keep CLAUDE.md concise while pointing to detailed constraint files.',
+    },
+    antiPattern: {
+      title: 'Vague instructions with no commands',
+      content: `# Project\nThis is a modern web app.\nWrite clean, well-tested, accessible code.\nFollow TypeScript and React best practices.`,
+      consequence: 'Claude has no build commands to run, no TypeScript flags to follow, and no architecture context. Every session re-discovers the same basics by reading the codebase from scratch.',
+      fix: 'Lead with exact runnable commands. Document specific compiler flags. Note any non-obvious deployment or architecture facts that can\'t be inferred from code alone.',
+    },
+  },
+
+  'claude-dir': {
+    sampleFiles: [
+      {
+        name: '.claude/settings.json',
+        description: 'Claude Code permissions and PostToolUse hooks',
+        content: `{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd learning-platform && npx tsc --noEmit 2>&1 | head -30"
+          }
+        ]
+      }
+    ]
+  }
+}`,
+      },
+    ],
+    claudeUsage: 'Claude Code reads .claude/ at session start to understand project-specific configuration: which shell commands are permitted, which hooks run automatically after tool use, and where to find rules, commands, and skills. It transforms Claude from a generic AI into a project-aware engineering partner.',
+    workflow: [
+      { actor: 'Developer', action: 'Creates .claude/ and adds settings.json with permissions + hooks' },
+      { actor: 'Claude Code', action: 'Discovers .claude/ on startup, loads settings.json' },
+      { actor: 'Claude Code', action: 'Knows which Bash commands are allowed without prompting user' },
+      { actor: 'Developer', action: 'Edits a TypeScript file via Claude' },
+      { actor: 'PostToolUse hook', action: 'Automatically runs npx tsc --noEmit after every file edit' },
+      { actor: 'Claude', action: 'Sees TypeScript errors immediately, fixes them before reporting done' },
+    ],
+    keyInsight: 'The .claude/ directory is the difference between a generic AI assistant and a project-aware AI partner. The PostToolUse hook alone — running tsc after every edit — catches 90% of type errors before they reach the developer.',
+    goodPattern: {
+      title: 'Granular permissions + automatic quality gate hook',
+      content: `.claude/\n  settings.json      # permissions + PostToolUse tsc hook\n  rules/\n    typescript.md    # one concern per file\n    dark-mode.md\n  commands/\n    add-page.md      # specific reusable operations\n    fix-ts.md`,
+      explanation: 'Granular permissions prevent accidental destructive commands. The tsc hook creates a continuous quality gate. One file per concern keeps rules maintainable.',
+    },
+    antiPattern: {
+      title: 'Monolithic rules file with everything mixed',
+      content: `.claude/\n  rules.md   # 500 lines: TS rules, UI rules, deploy notes,\n             # API standards, team preferences, git rules...`,
+      consequence: 'Hard to update without breaking unrelated sections. Claude loads all 500 lines even for trivial tasks. Rules conflict. Nobody knows what is still valid.',
+      fix: 'One file per concern. Each rule file under 60 lines. Reference from CLAUDE.md. Delete stale rules aggressively.',
+    },
+  },
+
+  'claude-dir/rules/': {
+    sampleFiles: [
+      {
+        name: 'rules/typescript.md',
+        description: 'TypeScript compiler constraint enforcement — injected before any TypeScript task',
+        content: `# TypeScript Constraints
+
+This project enforces strict TypeScript. Understand these before editing any .ts or .tsx file.
+
+## verbatimModuleSyntax
+
+Type-only imports **must** use \`import type\`. The compiler rejects runtime imports of types.
+
+${B}typescript
+import type { Concept } from '@/types';     // ✅ correct
+import { Concept } from '@/types';          // ❌ TS1484 error
+${B}
+
+## noUnusedLocals + noUnusedParameters
+
+Every declared variable and import must be used. No exceptions.
+
+${B}typescript
+import { useState, useEffect } from 'react'; // ❌ if only useState is used
+import { useState } from 'react';            // ✅
+
+function Foo({ dm, _unused }: Props) {}     // ❌ _unused prefix does NOT work
+function Foo({ dm }: Props) {}              // ✅ remove the param
+${B}
+
+**Do NOT prefix unused variables with \`_\` to silence errors. Delete them.**
+
+## Error → fix lookup
+
+| Error | Fix |
+|-------|-----|
+| 'X' is declared but its value is never read | Delete the import |
+| 'X' is declared but never used | Delete it — never rename to _X |
+| Object is possibly undefined | Use optional chaining or ?? fallback |
+
+## Verify after every edit
+
+${B}bash
+npx tsc --noEmit   # zero output = zero errors
+${B}`,
+      },
+      {
+        name: 'rules/dark-mode.md',
+        description: 'Dark mode pattern — dm prop threading and tw() utility usage',
+        content: `# Dark Mode Pattern
+
+## The rule
+
+Every page reads \`const { darkMode } = useAppStore()\` and aliases to \`const dm = darkMode\`.
+Pass \`dm: boolean\` as a prop to EVERY sub-component.
+**Never** read the store directly inside a sub-component.
+
+## The tw() utility
+
+\`src/lib/dm.ts\` exports \`tw(dark: boolean, ...keys)\`:
+
+${B}tsx
+import { tw } from '@/lib/dm';
+
+// ❌ Verbose inline ternary
+className={\`rounded-xl \${dm ? 'bg-slate-900' : 'bg-white'}\`}
+
+// ✅ tw() token
+className={\`rounded-xl \${tw(dm, 'card')}\`}
+${B}
+
+## Dynamic colors MUST use inline styles
+
+Tailwind purges class names constructed at runtime:
+
+${B}tsx
+// ❌ Purged at build time
+<div className={\`bg-\${cat.color}-500\`} />
+
+// ✅ Survives production build
+<div style={{ background: cat.color + '20', color: cat.color }} />
+${B}`,
+      },
+      {
+        name: 'rules/api-standards.md',
+        description: 'Consistent API response envelope and error code standards',
+        content: `# API Standards
+
+## Response envelope
+
+All API responses use a typed envelope:
+
+${B}typescript
+// Success
+{ data: T; error: null }
+
+// Error
+{ data: null; error: { code: string; message: string } }
+${B}
+
+## Error codes — use specific codes, never generic messages
+
+| Code | Meaning |
+|------|---------|
+| AUTH_EXPIRED | Token expired — client should refresh |
+| RATE_LIMITED | Too many requests — include Retry-After header |
+| VALIDATION_FAILED | Input invalid — include field-level errors |
+| NOT_FOUND | Resource does not exist |
+
+## Never expose implementation internals
+
+${B}typescript
+// ❌ Leaks stack trace to clients
+{ error: "TypeError: Cannot read property 'id' of undefined at auth.ts:42" }
+
+// ✅ Controlled error surface
+{ error: { code: "NOT_FOUND", message: "User not found" } }
+${B}`,
+      },
+    ],
+    claudeUsage: 'When Claude starts a task touching a specific domain (TypeScript, UI, APIs), it loads the relevant rule file from .claude/rules/ into its working context. These rules are constraints Claude must satisfy — they shape every line of code generated. The specificity of the rules directly determines the consistency of outputs.',
+    workflow: [
+      { actor: 'Engineer', action: '"Fix the TypeScript error in ConceptCard.tsx"' },
+      { actor: 'Claude Code', action: 'Detects TypeScript task → loads rules/typescript.md' },
+      { actor: 'Claude', action: 'Knows: verbatimModuleSyntax, noUnusedLocals, never _prefix' },
+      { actor: 'Claude', action: 'Applies fix following the loaded constraint rules exactly' },
+      { actor: 'Claude', action: 'Runs npx tsc --noEmit as specified in the rule file' },
+      { actor: 'Engineer', action: 'Receives a correct fix — no TypeScript flags re-explained' },
+    ],
+    keyInsight: 'Rules convert "Claude usually does this right" into "Claude always does this right." The difference between 70% and 99% consistency is the specificity of rule files. Vague rules produce vague compliance.',
+    goodPattern: {
+      title: 'Specific rules with ✅/❌ examples and verification command',
+      content: `## verbatimModuleSyntax\n✅ import type { Concept } from '@/types'\n❌ import { Concept } from '@/types'  // error: TS1484\n\n## After every edit\nRun: npx tsc --noEmit`,
+      explanation: 'Shows correct AND wrong patterns with error codes. Includes the verification command. No ambiguity about what correct means in this context.',
+    },
+    antiPattern: {
+      title: 'Vague rules Claude cannot act on',
+      content: `# TypeScript Rules\nUse TypeScript correctly.\nAvoid type errors.\nWrite type-safe, maintainable code.`,
+      consequence: 'Claude has no concrete constraint to satisfy. It will generate code that looks reasonable but may fail the compiler with verbatimModuleSyntax or noUnusedLocals errors.',
+      fix: 'Every rule references a specific compiler option or framework requirement. Show before/after code. Specify the exact command to verify.',
+    },
+  },
+
+  'claude-dir/commands/': {
+    sampleFiles: [
+      {
+        name: 'commands/add-page.md',
+        description: '/add-page — generates a complete page component following all project conventions',
+        content: `Create a new page component at \`src/pages/$ARGUMENTS.tsx\`.
+
+Requirements — complete ALL steps in order:
+
+1. Export a **named** function component (not default export)
+2. Read: \`const { darkMode } = useAppStore()\`
+3. Alias: \`const dm = darkMode\`
+4. Use \`tw(dm, ...)\` from \`@/lib/dm\` for ALL theme classes — never inline ternaries
+5. Import \`SectionLabel\`, \`Badge\`, \`CollapsibleSection\` from \`@/components/ui\` as needed
+6. Only \`import { useState }\` if the page actually uses local state
+7. Use \`AnimatePresence\` + \`motion.div\` for any tab or content transitions
+
+After creating the page component:
+8. Add route to \`src/App.tsx\`: \`<Route path="/your-path" element={<$ARGUMENTS />} />\`
+9. Add nav item to \`src/components/layout/Sidebar.tsx\` navItems array
+   Shape: \`{ path: '/your-path', icon: null, label: 'Page Name', emoji: '🎯', isNew: true }\`
+10. Run: \`npx tsc --noEmit\` — report done only when output is empty`,
+      },
+      {
+        name: 'commands/fix-ts.md',
+        description: '/fix-ts — diagnoses all TypeScript errors and fixes them in correct order',
+        content: `Run \`npx tsc --noEmit\` and fix ALL errors shown in the output.
+
+Fix errors in this priority order:
+1. \`verbatimModuleSyntax\` violations — change to \`import type { X }\`
+2. Unused variables/imports — DELETE them, never rename to \`_x\`
+3. Type mismatches — fix the usage, not the type definition
+4. Missing properties — check if the interface is correct before adding fields
+
+DO NOT:
+- Add \`@ts-ignore\` or \`@ts-expect-error\`
+- Rename unused variables to \`_varName\`
+- Add optional chaining (\`?.\`) where a value should always exist
+- Widen types to silence errors (don't change \`string\` to \`any\`)
+
+After each batch of fixes, run \`npx tsc --noEmit\` again.
+Report done ONLY when the output is completely empty (zero lines).`,
+      },
+      {
+        name: 'commands/create-service.md',
+        description: '/create-service — scaffolds a new backend microservice',
+        content: `Scaffold a new service at \`services/$ARGUMENTS-service/\`.
+
+Service directory structure:
+${B}
+services/$ARGUMENTS-service/
+  src/
+    index.ts           # Express app, middleware registration, route mounting
+    routes/            # Route handler files
+    services/          # Business logic (no HTTP concerns)
+    middleware/        # Auth validation, rate limiting, request logging
+  Dockerfile
+  package.json         # with shared-types and telemetry-sdk dependencies
+  tsconfig.json
+${B}
+
+Requirements:
+1. Use Express + TypeScript strict mode
+2. Import shared types from \`packages/shared-types/\`
+3. Import telemetry from \`packages/telemetry-sdk/\`
+4. Add \`GET /health\` endpoint returning \`{ status: "ok", service: "$ARGUMENTS" }\`
+5. Add auth middleware that validates Bearer JWT tokens
+6. Add request logging with correlation IDs
+7. Read PORT from \`process.env.PORT\` (default 3000)
+
+After scaffolding:
+- Register in \`docker-compose.yml\`
+- Add Kubernetes deployment to \`infra/kubernetes/$ARGUMENTS-service.yaml\``,
+      },
+    ],
+    claudeUsage: 'When a developer types /command-name in Claude Code, Claude reads .claude/commands/command-name.md and treats it as the current task prompt. The special $ARGUMENTS placeholder is replaced with any text typed after the command name. The command file becomes a reusable, parameterized AI operation.',
+    workflow: [
+      { actor: 'Developer', action: 'Types: /add-page UserDashboard' },
+      { actor: 'Claude Code', action: 'Finds .claude/commands/add-page.md, replaces $ARGUMENTS with "UserDashboard"' },
+      { actor: 'Claude', action: 'Reads all 10 requirements from the command template' },
+      { actor: 'Claude', action: 'Creates src/pages/UserDashboard.tsx with all conventions applied' },
+      { actor: 'Claude', action: 'Updates App.tsx route and Sidebar.tsx nav item' },
+      { actor: 'Claude', action: 'Runs npx tsc --noEmit — reports done only when output is empty' },
+    ],
+    keyInsight: 'Every time you find yourself explaining the same context to Claude, that context belongs in a command. Commands are reusable prompt programs — your accumulated engineering knowledge made instantly executable.',
+    goodPattern: {
+      title: 'Numbered requirements with verification step',
+      content: `Create page at src/pages/$ARGUMENTS.tsx\n\nRequirements:\n1. Export named function (not default)\n2. const { darkMode } = useAppStore()\n3. const dm = darkMode\n4. Use tw(dm, ...) for all theme classes\n...\n10. Run: npx tsc --noEmit — done only when empty`,
+      explanation: 'Numbered steps mean Claude checks each one. Including the verification step as step 10 means output is always valid before Claude reports done.',
+    },
+    antiPattern: {
+      title: 'Catch-all command that delegates to vague principles',
+      content: `Follow all project conventions and create whatever the user asked for, applying best practices.`,
+      consequence: 'Claude has no idea what "project conventions" are without loading CLAUDE.md and every rule. This command adds zero value over a plain question.',
+      fix: 'Each command does one specific thing extremely well. 15 focused commands beat 3 vague ones every time.',
+    },
+  },
+
+  'claude-dir/skills/': {
+    sampleFiles: [
+      {
+        name: 'skills/security-auditor.md',
+        description: 'Expert security review capability — gives Claude OWASP-level security analysis',
+        content: `# Security Auditor Skill
+
+You are now operating as a senior application security engineer with 10 years of experience.
+
+## Your Expertise
+- OWASP Top 10 vulnerability patterns
+- Authentication and authorization flaws
+- Injection vulnerabilities (SQL, NoSQL, command injection, prompt injection)
+- Secrets and credential exposure in code and config
+- JWT handling and token security anti-patterns
+- MCP tool permission boundary violations
+
+## Systematic Review Process
+
+When reviewing code, check ALL of the following:
+
+1. **Authentication** — Is every non-public route protected? Is middleware applied correctly?
+2. **Authorization** — Does code verify the user has PERMISSION (not just authentication)?
+3. **Input validation** — Is ALL external input validated before reaching business logic?
+4. **Secrets** — Are credentials in env vars only? Never in code, CLAUDE.md, or committed config?
+5. **MCP permissions** — Are write tools permission-scoped? Are all inputs validated against schema?
+6. **Injection** — Could any user input reach a DB query, shell command, or AI prompt unsanitized?
+
+## Required Output Format
+
+For each finding:
+- **Severity**: Critical | High | Medium | Low
+- **Location**: file.ts:lineNumber
+- **Vulnerability**: specific issue name
+- **Impact**: what an attacker can achieve
+- **Fix**: exact code change required`,
+      },
+      {
+        name: 'skills/rag-specialist.md',
+        description: 'RAG system expert — deep retrieval-augmented generation knowledge',
+        content: `# RAG Specialist Skill
+
+You are now operating as a senior AI engineer specializing in production RAG systems.
+
+## Your Expertise
+- Embedding model selection and dimensionality tradeoffs
+- Chunking strategies: fixed-size, semantic, hierarchical, late-chunking
+- Vector database design: HNSW vs IVF indexing, distance metrics
+- Retrieval strategies: cosine similarity, MMR, hybrid BM25 + vector
+- Reranking pipelines: cross-encoder models, LLM-as-reranker
+- Evaluation metrics: recall@k, MRR, NDCG, faithfulness, answer relevance
+
+## Implementation Standards
+
+When building RAG systems, apply these defaults:
+1. **Chunking** — 512 tokens with 10% overlap for general text; semantic for structured docs
+2. **Embeddings** — Never mix models in the same index. Log which model was used with each chunk.
+3. **Retrieval** — Return top-10 candidates, rerank to top-3 before sending to Claude
+4. **Context** — Format chunks with source metadata. Let Claude cite sources.
+5. **Evaluation** — Build a golden eval set (50+ question-answer pairs) before production
+
+## Red Flags to Always Call Out
+- Chunking at arbitrary character boundaries (breaks semantic coherence)
+- No logging of what was retrieved (impossible to debug retrieval failures)
+- Treating retrieval as a black box with no quality monitoring
+- No fallback behavior when retrieval confidence is low`,
+      },
+    ],
+    claudeUsage: 'A skill is loaded by including it in Claude\'s context at the start of a session or via a command. Once loaded, Claude operates with that expert\'s knowledge, methodology, and systematic approach for the remainder of the session. A skill "installs" a specialized mental model on demand.',
+    workflow: [
+      { actor: 'Developer', action: '"Load the security auditor skill and review src/routes/auth.ts"' },
+      { actor: 'Claude Code', action: 'Reads skills/security-auditor.md into active context' },
+      { actor: 'Claude', action: 'Now has systematic OWASP methodology, severity scale, output format' },
+      { actor: 'Claude', action: 'Reviews auth.ts checking all 6 categories in systematic order' },
+      { actor: 'Developer', action: 'Receives structured findings: "HIGH: Authorization bypass on line 87..."' },
+    ],
+    keyInsight: 'Skills separate domain expertise from task execution. You don\'t need to be a security expert to get expert-quality security reviews. The skill file IS the expertise; Claude is the execution engine.',
+    goodPattern: {
+      title: 'Expert persona with systematic checklist and output schema',
+      content: `You are a senior security engineer.\n\n## Systematic Checklist\n1. Authentication — every route protected?\n2. Authorization — permission, not just auth?\n3. Input validation — all external input?\n4. Secrets — env vars only?\n\n## Required Output\nSeverity | Location | Issue | Impact | Fix`,
+      explanation: 'Defines a process, not just knowledge. The systematic checklist prevents skipping categories. The output schema makes findings comparable across sessions.',
+    },
+    antiPattern: {
+      title: 'Generic "you are an expert" prompt',
+      content: `You are an expert who knows about application security.\nPlease review this code for any security issues you find.`,
+      consequence: 'Claude gives general security observations without systematic coverage. Findings vary wildly between sessions. No severity scale, no location format, no actionable fixes.',
+      fix: 'Define the expert\'s specific methodology, their systematic checklist, and the exact output format. Repeatability comes from process, not just knowledge.',
+    },
+  },
+
+  'claude-dir/workflows/': {
+    sampleFiles: [
+      {
+        name: 'workflows/feature-development.md',
+        description: 'End-to-end feature development procedure with quality gates',
+        content: `# Feature Development Workflow
+
+Use this workflow for ALL new features.
+
+## Phase 1: Discovery (before writing any code)
+1. Search codebase for existing similar patterns
+2. Identify all files that need to change
+3. List any new dependencies required
+4. Flag breaking changes to existing APIs
+
+## Phase 2: Implementation Order
+
+Implement in this sequence to prevent broken states:
+1. **Types first** — update src/types/index.ts or relevant data interfaces
+2. **Data layer** — update src/data/*.ts with new constants or structures
+3. **Component layer** — create/update React components
+4. **Page layer** — wire components into the page component
+5. **Route + nav** — add to App.tsx and Sidebar.tsx last
+
+## Phase 3: Quality Gates (run after EACH phase)
+${B}bash
+npx tsc --noEmit   # must be zero output before proceeding
+npm run lint       # must be zero warnings
+${B}
+
+## Phase 4: End-to-End Verification
+1. \`npm run dev\` — start dev server
+2. Navigate to the feature in the browser
+3. Test all user interactions
+4. Verify dark mode and light mode
+5. Check mobile layout
+
+## Hard Rules
+- Never skip Phase 2 implementation order
+- Never proceed to next phase with TypeScript errors
+- Never commit with failing type checks`,
+      },
+      {
+        name: 'workflows/production-hotfix.md',
+        description: 'Production hotfix procedure — minimum risk path to fix critical issues',
+        content: `# Production Hotfix Workflow
+
+Use ONLY for critical production issues.
+
+## Step 1: Assess (2 min max)
+- What is broken? (exact symptom)
+- Who is affected? (all users / specific users)
+- What is the business impact? (data loss / UX broken / complete outage)
+
+## Step 2: Reproduce Locally (5 min max)
+\`\`\`bash
+git pull origin main
+npm run dev
+\`\`\`
+Reproduce the exact issue. Document: what input → what failure.
+
+## Step 3: Minimum Viable Fix
+- Fix ONLY what is broken
+- Do NOT refactor surrounding code in the same change
+- Do NOT add unrelated improvements
+- Run: npx tsc --noEmit && npm run lint
+
+## Step 4: Emergency Deploy
+1. Create PR titled "hotfix: [description]"
+2. Tag on-call engineer for emergency review
+3. After approval: merge → auto-deploy triggers
+4. Monitor error rates and AI accuracy for 15 minutes
+
+## Step 5: Post-Mortem (within 24 hours)
+- Root cause analysis
+- What test would have caught this?
+- Add missing test/eval to tests/
+- Document in docs/post-mortems/`,
+      },
+    ],
+    claudeUsage: 'Workflows act as structured operating procedures that guide Claude through multi-step engineering tasks. Unlike commands (single-shot operations), workflows define phases, decision points, and quality gates between steps. They encode institutional process knowledge as executable AI procedures.',
+    workflow: [
+      { actor: 'Developer', action: '"Run the feature development workflow for the new Settings page"' },
+      { actor: 'Claude', action: 'Loads workflows/feature-development.md as the operating procedure' },
+      { actor: 'Claude', action: 'Phase 1: Searches codebase for existing settings patterns' },
+      { actor: 'Claude', action: 'Phase 2: Creates types → data → component → page (in that order)' },
+      { actor: 'Claude', action: 'Phase 3: Runs tsc after each phase, fixes errors before proceeding' },
+      { actor: 'Claude', action: 'Phase 4: Reports ready for developer verification in browser' },
+    ],
+    keyInsight: 'Workflows encode institutional knowledge about HOW to do work correctly. A team\'s hard-won lessons about implementation order, testing gates, and deployment procedures become repeatable, AI-executable procedures.',
+    goodPattern: {
+      title: 'Phase-based workflow with explicit ordering and quality gates',
+      content: `## Phase 2: Implementation Order\n1. Types first\n2. Data layer\n3. Component layer\n4. Page layer\n5. Route + nav — last\n\n## After each phase:\nnpx tsc --noEmit  # must be zero output`,
+      explanation: 'Explicit phases prevent skipping steps. Types-first ordering prevents components from using undefined types. Quality gates catch errors before they cascade.',
+    },
+    antiPattern: {
+      title: 'Unordered checklist without gates',
+      content: `Feature Development:\n- Create the component\n- Write tests\n- Update the data\n- Fix any errors that come up`,
+      consequence: 'Creating components before types causes type errors. Unordered tasks mean intermediate broken states. "Fix any errors that come up" means errors compound instead of being caught early.',
+      fix: 'Every workflow specifies implementation ORDER explicitly. Include quality gates between phases. Types before components, data before services, services before routes.',
+    },
+  },
+
+  'agents': {
+    sampleFiles: [
+      {
+        name: 'agents/planner-agent/system-prompt.md',
+        description: 'Planner agent — decomposes goals into executable task DAGs for specialist agents',
+        content: `# Planner Agent System Prompt
+
+You are a senior software engineering project planner.
+Your role: receive high-level engineering goals and decompose them into precise, ordered task plans for specialist agents.
+
+## Task Schema
+
+When decomposing a goal, output a structured task plan:
+
+${B}json
+{
+  "goal": "original user goal",
+  "tasks": [
+    {
+      "id": "task-001",
+      "type": "research | code | test | doc | deploy",
+      "assignee": "retrieval-agent | executor-agent | monitoring-agent",
+      "description": "precise, unambiguous task description",
+      "dependencies": [],
+      "estimatedTokens": 2000,
+      "canParallelize": false
+    }
+  ]
+}
+${B}
+
+## Planning Rules
+1. ALWAYS start with retrieval tasks — never write code before searching for existing patterns
+2. Never assign executor tasks before dependent retrieval tasks complete
+3. Break tasks exceeding 5000 tokens into smaller units
+4. Mark canParallelize true only when tasks share NO file dependencies
+5. Always end the plan with a monitoring/review task`,
+      },
+      {
+        name: 'agents/executor-agent/config.ts',
+        description: 'Executor agent configuration — write access with safety limits',
+        content: `import { createAgent } from '@company/ai-sdk';
+
+export const executorAgent = createAgent({
+  name: 'executor-agent',
+  model: 'claude-opus-4-7',
+
+  // Executor can read and write files, run commands, search code
+  tools: ['read_file', 'write_file', 'run_command', 'search_codebase'],
+
+  // These require human approval or are handled by orchestrator
+  restrictedTools: [
+    'delete_file',      // requires explicit human confirmation
+    'git_push',         // handled by orchestrator after review
+    'deploy_service',   // handled by orchestrator with monitoring
+  ],
+
+  limits: {
+    maxIterations: 50,
+    maxTokensPerSession: 200_000,
+    requireHumanApproval: [
+      'write_file in services/*/src/routes/**',  // API changes need review
+      'write_file in infra/**',                   // infra changes always reviewed
+    ],
+  },
+
+  onError: 'retry-with-context',
+  onMaxIterations: 'report-to-orchestrator',
+});`,
+      },
+    ],
+    claudeUsage: 'Agents run as autonomous Claude instances in a persistent operational loop: receive task → use tools → observe results → decide next step → repeat. Each agent is optimized for its specialty and has only the tools it needs. The orchestrator coordinates handoffs between agents using the task plan from the planner.',
+    workflow: [
+      { actor: 'User', action: '"Build a complete user authentication system"' },
+      { actor: 'AI Orchestrator', action: 'Routes goal to Planner Agent' },
+      { actor: 'Planner Agent', action: 'Decomposes: [research → schema → auth service → tests → docs → deploy]' },
+      { actor: 'Retrieval Agent', action: 'Searches codebase — finds existing JWT utilities and user model' },
+      { actor: 'Executor Agent', action: 'Implements auth service using retrieved patterns — runs tests after each function' },
+      { actor: 'Monitoring Agent', action: 'Reviews for security issues — flags JWT secret in environment check' },
+      { actor: 'Executor Agent', action: 'Applies security fix, re-runs tests, all passing' },
+      { actor: 'Planner Agent', action: 'Confirms all tasks complete — reports to user with summary' },
+    ],
+    keyInsight: 'Multi-agent systems work because specialization enables depth. A planner optimized for decomposition, an executor optimized for implementation, and a monitor optimized for quality — each does one thing better than a single generalist agent could.',
+    goodPattern: {
+      title: 'Specialist agent with scoped tools and safety limits',
+      content: `const executorAgent = createAgent({\n  tools: ['read_file', 'write_file', 'run_command'],\n  restrictedTools: ['delete_file', 'git_push'],\n  limits: {\n    maxIterations: 50,\n    requireHumanApproval: ['write_file in infra/**']\n  }\n});`,
+      explanation: 'Minimal tool set. Explicit restricted tools list. Iteration limit prevents infinite loops. Human approval for high-risk paths.',
+    },
+    antiPattern: {
+      title: 'Omnipotent agent with unrestricted access',
+      content: `const agent = createAgent({\n  tools: 'all',\n  limits: {},\n  systemPrompt: 'You are a helpful AI. Do what the user asks.'\n});`,
+      consequence: 'An agent with all tools and no limits is one confused tool call away from a critical incident: dropped tables, force-pushed branches, deleted config files, deployed broken code.',
+      fix: 'Principle of least privilege: start with read-only tools. Add write access explicitly per tool. Set max iterations. Require human approval for destructive or high-impact operations.',
+    },
+  },
+
+  'mcp': {
+    sampleFiles: [
+      {
+        name: 'mcp/servers.json',
+        description: 'MCP server registry — connects Claude to external tools and APIs',
+        content: `{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "\${GITHUB_TOKEN}"
+      }
+    },
+    "postgres-readonly": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres",
+               "\${DATABASE_URL}"],
+      "permissions": {
+        "allow": ["SELECT"],
+        "deny": ["INSERT", "UPDATE", "DELETE", "DROP", "TRUNCATE"]
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem",
+               "/Users/me/projects/my-app"],
+      "readonly": false
+    },
+    "internal-api": {
+      "command": "node",
+      "args": ["mcp/servers/internal-api.js"],
+      "env": { "API_KEY": "\${INTERNAL_API_KEY}" }
+    }
+  }
+}`,
+      },
+      {
+        name: 'mcp/servers/internal-api.ts',
+        description: 'Custom MCP server — exposes company APIs to Claude with input validation',
+        content: `import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+
+const server = new Server(
+  { name: 'internal-api', version: '1.0.0' },
+  { capabilities: { tools: {} } }
+);
+
+server.setRequestHandler('tools/list', async () => ({
+  tools: [
+    {
+      name: 'search_knowledge_base',
+      description: 'Full-text search of the internal knowledge base',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', minLength: 1, maxLength: 500 },
+          limit: { type: 'number', minimum: 1, maximum: 20, default: 5 }
+        },
+        required: ['query']
+      }
+    }
+  ]
+}));
+
+server.setRequestHandler('tools/call', async (request) => {
+  const { name, arguments: args } = request.params;
+
+  // ALWAYS validate inputs before execution
+  if (name === 'search_knowledge_base') {
+    if (!args.query || typeof args.query !== 'string') {
+      throw new Error('query must be a non-empty string');
+    }
+    // Sanitize: remove SQL special characters
+    const sanitized = args.query.replace(/[';--]/g, '');
+    return await searchKB(sanitized, Math.min(args.limit ?? 5, 20));
+  }
+
+  throw new Error(\`Unknown tool: \${name}\`);
+});
+
+const transport = new StdioServerTransport();
+await server.connect(transport);`,
+      },
+    ],
+    claudeUsage: 'At startup, the AI orchestrator connects to all registered MCP servers and calls tools/list on each. The resulting tool catalog is included in Claude\'s system context. During a conversation, when Claude needs real-world data, it emits a tool_use block; the orchestrator routes it to the correct MCP server and returns the result as tool_result for Claude to continue reasoning.',
+    workflow: [
+      { actor: 'AI Orchestrator', action: 'Reads mcp/servers.json on startup' },
+      { actor: 'MCP Servers', action: 'GitHub, Postgres, internal-api all establish connections' },
+      { actor: 'Claude', action: 'Receives tool list in context: search_knowledge_base, list_prs, query_db...' },
+      { actor: 'User', action: '"Summarize last 5 open PRs and check if any conflict with the auth schema"' },
+      { actor: 'Claude', action: 'Emits tool_use: { name: "list_prs", input: { state: "open", limit: 5 } }' },
+      { actor: 'GitHub MCP', action: 'Calls GitHub API, returns PR data' },
+      { actor: 'Claude', action: 'Emits tool_use: { name: "query_db", input: { sql: "SELECT..." } }' },
+      { actor: 'Claude', action: 'Uses both tool_results to generate grounded, accurate analysis' },
+    ],
+    keyInsight: 'MCP gives Claude a safe, auditable, permission-controlled way to interact with the real world. Every tool call is explicit, logged, and scoped. Without MCP, Claude can only work with information in its context window — with MCP, it can query databases, read PRs, and call any API.',
+    goodPattern: {
+      title: 'Read-only database with explicit deny list',
+      content: `"postgres-readonly": {\n  "permissions": {\n    "allow": ["SELECT"],\n    "deny": ["INSERT", "UPDATE", "DELETE", "DROP", "TRUNCATE"]\n  }\n}`,
+      explanation: 'Starting with SELECT-only protects production data. The deny list ensures even if the allow list is misconfigured, destructive operations cannot run.',
+    },
+    antiPattern: {
+      title: 'Unrestricted production database access',
+      content: `"postgres": {\n  "command": "npx @modelcontextprotocol/server-postgres",\n  "args": ["postgresql://root:password@prod-db/main"]\n  // No permissions configured\n}`,
+      consequence: 'Claude can execute any SQL against production. A confused agent, a prompt injection attack, or an honest mistake can run DELETE FROM users or DROP TABLE without any protection.',
+      fix: 'Always start read-only for initial implementation. Add write access explicitly with strict permission lists. Never connect production databases without a deny list for destructive operations.',
+    },
+  },
+
+  'tests': {
+    sampleFiles: [
+      {
+        name: 'tests/ai-evals/accuracy.eval.ts',
+        description: 'AI quality evaluation suite — measures Claude response accuracy over time',
+        content: `import { runEval } from '@company/eval-sdk';
+import { aiOrchestrator } from '@/services/ai-orchestrator';
+
+// 92% accuracy required — CI fails below this threshold
+const ACCURACY_THRESHOLD = 0.92;
+
+export const coreAccuracyEval = runEval({
+  name: 'core-accuracy-eval',
+
+  // 200+ golden examples: { input, context, expectedOutput }
+  dataset: 'tests/ai-evals/golden-dataset.jsonl',
+
+  async run(example) {
+    const response = await aiOrchestrator.chat({
+      message: example.input,
+      context: example.context,
+    });
+    return response.content;
+  },
+
+  scorers: [
+    {
+      name: 'semantic-similarity',
+      // Returns 0-1 similarity between output and expected
+      score: (output, expected) => computeSemanticSimilarity(output, expected),
+    },
+    {
+      name: 'hallucination-check',
+      // Returns 0 if output contains claims not grounded in context
+      score: (output, context) => checkGrounding(output, context),
+    },
+    {
+      name: 'tool-use-correctness',
+      // Verifies Claude used correct tools in correct order
+      score: (output, expected) => compareToolUsage(output.toolCalls, expected.expectedTools),
+    },
+  ],
+
+  threshold: ACCURACY_THRESHOLD,
+
+  onFail(results) {
+    console.error(\`Eval FAILED: \${results.failedCount} examples below threshold\`);
+    console.error('Worst examples:', results.worstPerforming.slice(0, 3));
+    process.exit(1); // Fails CI, blocks merge
+  },
+});`,
+      },
+    ],
+    claudeUsage: 'AI evals are not used by Claude — they evaluate Claude. They run as a separate CI pipeline when prompts, agent configs, or MCP schemas change. They protect against quality regressions that TypeScript checks and unit tests are blind to: degraded reasoning, hallucinations, wrong tool use.',
+    workflow: [
+      { actor: 'Engineer', action: 'Opens PR that modifies the AI orchestrator system prompt' },
+      { actor: 'GitHub CI', action: 'Detects change to services/ai-orchestrator/ — triggers ai-evals.yml' },
+      { actor: 'Eval Pipeline', action: 'Runs 200 golden examples through the updated orchestrator' },
+      { actor: 'Eval Pipeline', action: 'Scores: semantic-similarity 88%, hallucination 0.9, tool-use 0.85' },
+      { actor: 'Eval Pipeline', action: 'Overall score: 87.7% — below 92% threshold' },
+      { actor: 'CI', action: 'FAILS — blocks PR merge, posts results as PR comment' },
+      { actor: 'Engineer', action: 'Revises prompt, re-runs evals, achieves 94.2% — PR passes' },
+    ],
+    keyInsight: 'For AI systems, the TypeScript compiler cannot catch the most important failures. Evals are the quality gate for AI behavior. Without them, "we hope the AI still works" after a prompt change. With them, "we know it does."',
+    goodPattern: {
+      title: 'Multi-dimension eval suite with CI enforcement',
+      content: `scorers: [\n  { name: 'semantic-similarity', ... },\n  { name: 'hallucination-check', ... },\n  { name: 'tool-use-correctness', ... }\n],\nthreshold: 0.92,\nonFail: () => process.exit(1)  // fails CI`,
+      explanation: 'Three scorers catch three different failure modes. The 92% threshold is a quantified quality bar. process.exit(1) turns an eval failure into a blocked merge.',
+    },
+    antiPattern: {
+      title: 'Mocking Claude in unit tests',
+      content: `// tests/ai-orchestrator.test.ts\nit('calls Claude', () => {\n  const mock = jest.fn().mockReturnValue('ok');\n  expect(orchestrator.chat('hello', mock)).toBeDefined();\n});`,
+      consequence: 'Mocking Claude tests the plumbing, not the quality. A prompt change that makes Claude 35% less accurate passes all mocked unit tests. Real users experience the regression; your tests are silent.',
+      fix: 'Write evals that call the real Claude API against a golden dataset. Measure semantic quality, not just response existence.',
+    },
+  },
+};
+
+// ── Guided learning path ──────────────────────────────────────────────────────
+
+export const learningPath: LearningStep[] = [
+  {
+    stepNum: 1,
+    nodeId: 'claude-md',
+    title: 'The Intelligence Contract',
+    estimatedTime: '2 min',
+    lesson: 'CLAUDE.md is the first file Claude reads in every session — before any task. It is the initialization script for your AI engineering team. Every command you never have to explain, every TypeScript constraint you never have to re-state, and every architectural decision you never have to re-justify starts here. A 50-line CLAUDE.md well-written is worth 500 hours of re-explanation.',
+    keyTakeaway: 'CLAUDE.md is not documentation — it is the session initialization contract. Time you invest writing it is multiplied by every future Claude interaction in the project.',
+    question: 'Why must CLAUDE.md include build commands like "npm run dev"?',
+    answer: 'Because Claude needs the EXACT command for this specific project. "npm start" may not exist. "yarn build" may use different config. Without explicit commands, Claude guesses and sometimes runs the wrong thing. Explicit commands eliminate this class of error entirely.',
+  },
+  {
+    stepNum: 2,
+    nodeId: 'claude-dir',
+    title: 'The AI Configuration Layer',
+    estimatedTime: '3 min',
+    lesson: 'The .claude/ directory transforms Claude from a generic assistant into a project-aware engineering partner. While CLAUDE.md is the constitution, .claude/ is the full body of law: rules governing every task, commands encoding workflows, skills providing expertise on demand, hooks running quality gates automatically. Most engineers skip this and wonder why Claude is inconsistent.',
+    keyTakeaway: 'Engineers without .claude/ use Claude as smart autocomplete. Engineers with .claude/ have a tireless expert colleague who has read every document about the project and never forgets the conventions.',
+    question: 'What is the difference between .claude/rules/ and .claude/commands/?',
+    answer: 'Rules are always-on constraints that govern HOW Claude works (TypeScript conventions, dark mode patterns). Commands are on-demand operations for WHAT to do (/add-page, /fix-ts). Rules shape passive behavior; commands trigger active work.',
+  },
+  {
+    stepNum: 3,
+    nodeId: 'claude-dir',
+    title: 'Rules as Enforced Constraints',
+    estimatedTime: '2 min',
+    lesson: 'Rule files in .claude/rules/ are injected into Claude\'s context before relevant tasks. The critical insight: rules are not suggestions — they are constraints that shape code generation. A rule file with ✅/❌ examples, specific compiler flag references, and a verification command produces 99% compliant outputs. A vague rule file produces 70% compliant outputs — and you never know which 30% is wrong.',
+    keyTakeaway: 'Rules convert "Claude usually does this right" to "Claude always does this right." The difference between 70% and 99% consistency is rule file specificity.',
+    question: 'What makes a rule file effective vs. ineffective?',
+    answer: 'Effective: shows ✅/❌ code examples, references the specific compiler option (verbatimModuleSyntax), includes the verification command (npx tsc --noEmit). Ineffective: "write type-safe code" — Claude has no actionable constraint to satisfy.',
+  },
+  {
+    stepNum: 4,
+    nodeId: 'claude-dir',
+    title: 'Commands as Engineering Velocity',
+    estimatedTime: '2 min',
+    lesson: 'Slash commands in .claude/commands/ replace repetitive prompting. Every time you find yourself explaining the same context to Claude, that context belongs in a command file. /add-page, /fix-ts, /create-service — each encodes institutional knowledge into an instant, parameterized AI operation. A library of 10 well-designed commands transforms how quickly a team ships.',
+    keyTakeaway: 'Commands are reusable prompt programs. Build them from the patterns you repeat. The time to write a command is repaid the second time you would have typed the same instructions.',
+    question: 'What is the $ARGUMENTS placeholder in command files?',
+    answer: 'When you type "/add-page UserDashboard", Claude Code replaces $ARGUMENTS with "UserDashboard" before executing the command. This makes commands parameterizable — the same template generates any page name.',
+  },
+  {
+    stepNum: 5,
+    nodeId: 'services',
+    title: 'The AI Orchestration Layer',
+    estimatedTime: '3 min',
+    lesson: 'The ai-orchestrator service is the heart of a Claude-native backend. It manages the complete Claude interaction lifecycle: assembling system context (CLAUDE.md + rules), building tool definitions from the MCP registry, making Anthropic API calls, handling the tool_use ↔ tool_result loop, streaming responses, and persisting conversations. Getting this right is where production AI systems succeed or fail.',
+    keyTakeaway: 'Building a chat UI is easy. Building a production AI orchestrator — with context management, tool lifecycle, observability, and graceful degradation — is the real engineering challenge.',
+    question: 'Why does the AI orchestrator manage conversation history?',
+    answer: 'Claude has no built-in memory. Each API call starts fresh. The orchestrator must retrieve previous messages and include them in every request to maintain conversation context. Without this, every message appears to start a new conversation.',
+  },
+  {
+    stepNum: 6,
+    nodeId: 'mcp',
+    title: 'Claude Gets Hands',
+    estimatedTime: '3 min',
+    lesson: 'Without MCP, Claude works only with text in its context window. With MCP, Claude gains the ability to read databases, call APIs, search the web, execute code, and interact with any external system with an MCP server. MCP is the protocol that transforms Claude from a text generator into an AI that takes real-world actions — safely, auditaly, and with scoped permissions.',
+    keyTakeaway: 'MCP is to Claude what HTTP is to a browser. Any tool that speaks MCP is instantly available to Claude without custom integration code. Permission scoping makes it safe for production.',
+    question: 'Why should MCP write tools be permission-scoped?',
+    answer: 'Because Claude\'s tool calls are based on reasoning, and reasoning can be wrong. An unscoped write tool means a confused agent, a prompt injection, or an honest mistake can cause real damage. Scoping ensures the worst-case Claude error is bounded.',
+  },
+  {
+    stepNum: 7,
+    nodeId: 'agents',
+    title: 'Autonomous AI Workers',
+    estimatedTime: '4 min',
+    lesson: 'Single Claude calls handle simple tasks. Complex engineering work — "build an auth system", "debug this production issue", "migrate the entire data layer" — requires sequential decisions with error recovery and state that persists across many steps. Agents solve this with a persistent operational loop: perceive → plan → act → observe → repeat. Specialization (planner, executor, monitor) enables depth.',
+    keyTakeaway: 'Agents add value when tasks require: 10+ sequential decisions, error recovery mid-task, persistent state between steps, or specialist knowledge that can\'t fit in one prompt. For simple tasks, a command is better.',
+    question: 'Why is the planner agent separate from the executor agent?',
+    answer: 'Decomposition and execution require different optimization. A planner needs full system context to make good task DAGs. An executor needs deep focus on one concrete task. Mixing them creates agents mediocre at both.',
+  },
+  {
+    stepNum: 8,
+    nodeId: 'packages',
+    title: 'Shared Libraries',
+    estimatedTime: '2 min',
+    lesson: 'packages/ prevents the most common scaling failure: code duplication. When every app and service has its own copy of the AI client, type definitions, and UI components, a single bug fix requires 8 coordinated PRs. packages/ creates one source of truth. Fix once, all consumers get the fix on next dependency update.',
+    keyTakeaway: 'Extract to packages/ at the second copy of the same code. By the third copy, the technical debt is already significant. The right time is always earlier than it feels.',
+    question: 'What belongs in packages/ai-sdk/ vs services/ai-orchestrator/?',
+    answer: 'packages/ai-sdk/ is the generic, reusable Anthropic API wrapper (retry logic, token counting, streaming) used by all services. services/ai-orchestrator/ is the application-specific logic (conversation management, context building, tool routing) for this particular system.',
+  },
+  {
+    stepNum: 9,
+    nodeId: 'tests',
+    title: 'AI Quality Engineering',
+    estimatedTime: '3 min',
+    lesson: 'Traditional tests verify that code does what you wrote. AI evals verify that Claude does what you intended. A prompt change, model update, or context window modification can silently degrade AI quality without failing a single unit test. An eval suite with 200 golden examples and a CI threshold is the safety net that catches what traditional tests cannot.',
+    keyTakeaway: 'The moment you ship AI to production without evals, you are flying blind. You have no objective signal if a change improved or degraded AI quality. Evals are not optional for production AI — they are the foundation.',
+    question: 'What is the minimum useful AI eval suite?',
+    answer: '20-50 golden question-answer pairs, a semantic similarity scorer, and a basic hallucination check. This catches the most common failures. Expand to 200+ examples with tool-use correctness scoring before high-stakes production deployment.',
+  },
+  {
+    stepNum: 10,
+    nodeId: 'infra',
+    title: 'Production Operations',
+    estimatedTime: '3 min',
+    lesson: 'AI systems fail in production in ways traditional software does not: response quality degrades silently, hallucination rates spike under specific inputs, agent loops get stuck, tool calls fail intermittently. The infra/observability/ layer makes these failures visible and actionable. Without AI-specific monitoring (accuracy trends, hallucination rates, tool success rates), failures are invisible until users complain.',
+    keyTakeaway: 'An AI system without observability is a black box that occasionally returns wrong answers for unknown reasons. Instrument everything AI-specific: accuracy per query type, hallucination rate over time, tool call success rate, agent task completion rate.',
+    question: 'Which AI-specific metrics should be on the production dashboard?',
+    answer: 'Token usage per request (cost), response latency P50/P99, accuracy vs eval baseline, hallucination rate, tool call success rate, agent task completion rate, error rate by error type. Standard web metrics (CPU, memory, HTTP errors) are necessary but not sufficient for AI systems.',
+  },
+];

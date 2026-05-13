@@ -6,18 +6,20 @@ import { tw } from '@/lib/dm';
 import { SectionLabel, Badge, CollapsibleSection } from '@/components/ui';
 import {
   archNodes, flowSimulations, evolutionStages, archPatterns,
-  LAYER_META,
+  LAYER_META, nodeDeepContent, learningPath,
 } from '@/data/architectureExplorerData';
-import type { ArchNode, FlowSimulation, EvolutionStage, ArchPattern } from '@/data/architectureExplorerData';
+import type { ArchNode, FlowSimulation, EvolutionStage, ArchPattern, DeepNodeContent } from '@/data/architectureExplorerData';
 
-type TabId = 'map' | 'flows' | 'evolution' | 'patterns';
+type TabId = 'map' | 'flows' | 'evolution' | 'patterns' | 'learn';
 type ViewMode = 'beginner' | 'developer' | 'architect' | 'enterprise' | 'ai-engineering';
+type DTab = 'overview' | 'files' | 'usage' | 'patterns';
 
 const TABS: Array<{ id: TabId; label: string; emoji: string }> = [
   { id: 'map', label: 'Architecture Map', emoji: '🗺️' },
   { id: 'flows', label: 'System Flows', emoji: '⚡' },
   { id: 'evolution', label: 'Evolution', emoji: '📈' },
   { id: 'patterns', label: 'Patterns', emoji: '🎯' },
+  { id: 'learn', label: 'Learning Path', emoji: '🎓' },
 ];
 
 const VIEW_MODES: Array<{ id: ViewMode; label: string; description: string }> = [
@@ -253,13 +255,132 @@ function FileTree({ selectedNodeId, selectedSubIdx, onSelectNode, onSelectSubIte
   );
 }
 
+// ── Shared tab bar used inside detail panels ─────────────────────────────────
+
+function DetailTabBar({ tabs, active, onSelect, dm }: {
+  tabs: Array<{ id: DTab; label: string }>;
+  active: DTab;
+  onSelect: (t: DTab) => void;
+  dm: boolean;
+}) {
+  return (
+    <div className={`flex border-b shrink-0 ${tw(dm, 'border')}`}>
+      {tabs.map(t => (
+        <button key={t.id} onClick={() => onSelect(t.id)}
+          className={`px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px shrink-0 ${
+            active === t.id
+              ? 'border-violet-500 text-violet-500'
+              : `border-transparent ${tw(dm, 'muted')}`
+          }`}>
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Shared deep-content tab bodies ───────────────────────────────────────────
+
+function DeepFilesTab({ deep, dm }: { deep: DeepNodeContent; dm: boolean }) {
+  return (
+    <div className="p-4 space-y-5">
+      {deep.sampleFiles.map((file, fi) => (
+        <div key={fi}>
+          <code className={`text-xs font-mono font-bold block mb-1 ${dm ? 'text-sky-300' : 'text-sky-700'}`}>{file.name}</code>
+          <p className={`text-xs mb-2 ${tw(dm, 'muted')}`}>{file.description}</p>
+          <pre className={`text-xs rounded-xl p-3 overflow-x-auto leading-relaxed font-mono whitespace-pre ${dm ? 'bg-[#0d1117] text-emerald-300' : 'bg-slate-900 text-emerald-400'}`} style={{ fontSize: 11 }}>
+            {file.content}
+          </pre>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DeepUsageTab({ deep, nodeColor, dm }: { deep: DeepNodeContent; nodeColor: string; dm: boolean }) {
+  return (
+    <div className="p-4 space-y-4">
+      <div>
+        <SectionLabel dm={dm} className="mb-2">How Claude Uses This</SectionLabel>
+        <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{deep.claudeUsage}</p>
+      </div>
+      <div>
+        <SectionLabel dm={dm} className="mb-2">Step-by-Step Workflow</SectionLabel>
+        <div className="space-y-2">
+          {deep.workflow.map((step, i) => (
+            <div key={i} className={`flex items-start gap-2.5 p-2.5 rounded-lg ${tw(dm, 'cardAlt')}`}>
+              <span className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-xs font-bold text-white mt-0.5" style={{ background: nodeColor, minWidth: 20 }}>{i + 1}</span>
+              <div className="min-w-0">
+                <span className={`text-xs font-semibold ${tw(dm, 'body')}`}>{step.actor}: </span>
+                <span className={`text-xs ${tw(dm, 'muted')}`}>{step.action}</span>
+                {step.detail && <p className={`text-xs mt-0.5 italic ${dm ? 'text-slate-500' : 'text-slate-400'}`}>{step.detail}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="p-3 rounded-xl border-l-4" style={{ borderColor: nodeColor, background: nodeColor + '10' }}>
+        <div className="text-xs font-bold mb-1" style={{ color: nodeColor }}>Key Insight</div>
+        <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{deep.keyInsight}</p>
+      </div>
+    </div>
+  );
+}
+
+function DeepPatternsTab({ deep, dm }: { deep: DeepNodeContent; dm: boolean }) {
+  return (
+    <div className="p-4 space-y-4">
+      <div className={`rounded-xl border overflow-hidden ${dm ? 'border-emerald-800/50 bg-emerald-900/10' : 'border-emerald-200 bg-emerald-50'}`}>
+        <div className="flex items-center gap-2 px-3 py-2.5 border-b" style={{ borderColor: dm ? 'rgba(6,78,59,0.4)' : '#a7f3d0' }}>
+          <span>✅</span>
+          <span className={`text-xs font-bold ${dm ? 'text-emerald-300' : 'text-emerald-700'}`}>{deep.goodPattern.title}</span>
+        </div>
+        <div className="p-3 space-y-2">
+          <pre className={`text-xs rounded-lg p-2.5 overflow-x-auto font-mono whitespace-pre ${dm ? 'bg-[#0d1117] text-emerald-300' : 'bg-slate-900 text-emerald-400'}`}>{deep.goodPattern.content}</pre>
+          <p className={`text-xs leading-relaxed ${tw(dm, 'body')}`}>{deep.goodPattern.explanation}</p>
+        </div>
+      </div>
+      <div className={`rounded-xl border overflow-hidden ${dm ? 'border-red-800/50 bg-red-900/10' : 'border-red-200 bg-red-50'}`}>
+        <div className="flex items-center gap-2 px-3 py-2.5 border-b" style={{ borderColor: dm ? 'rgba(127,29,29,0.4)' : '#fca5a5' }}>
+          <span>❌</span>
+          <span className={`text-xs font-bold ${dm ? 'text-red-300' : 'text-red-700'}`}>{deep.antiPattern.title}</span>
+        </div>
+        <div className="p-3 space-y-2">
+          <pre className={`text-xs rounded-lg p-2.5 overflow-x-auto font-mono whitespace-pre ${dm ? 'bg-[#0d1117] text-red-300' : 'bg-slate-900 text-red-400'}`}>{deep.antiPattern.content}</pre>
+          <div className={`p-2.5 rounded-lg text-xs ${dm ? 'bg-red-900/15 text-red-200' : 'bg-red-50 text-red-700'}`}>
+            <span className="font-bold">⚠️ What goes wrong: </span>{deep.antiPattern.consequence}
+          </div>
+          <div className={`p-2.5 rounded-lg text-xs ${dm ? 'bg-sky-900/15 text-sky-200' : 'bg-sky-50 text-sky-700'}`}>
+            <span className="font-bold">🔧 The fix: </span>{deep.antiPattern.fix}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Sub-item detail panel ─────────────────────────────────────────────────────
 
 function SubItemDetail({ nodeId, idx, dm }: { nodeId: string; idx: number; dm: boolean }) {
+  const [dTab, setDTab] = useState<DTab>('overview');
   const node = archNodes.find(n => n.id === nodeId);
   if (!node || !node.subItems) return null;
   const item = node.subItems[idx];
   const layer = LAYER_META[node.layer];
+  const deepKey = `${nodeId}/${item.name}`;
+  const deep = nodeDeepContent[deepKey];
+
+  useEffect(() => setDTab('overview'), [nodeId, idx]);
+
+  const tabs: Array<{ id: DTab; label: string }> = [
+    { id: 'overview', label: '📖 Overview' },
+    ...(deep ? [
+      { id: 'files' as DTab, label: '📄 Files' },
+      { id: 'usage' as DTab, label: '⚡ Usage' },
+      { id: 'patterns' as DTab, label: '🎯 Patterns' },
+    ] : []),
+  ];
+
   return (
     <motion.div
       key={`${nodeId}-${idx}`}
@@ -267,40 +388,61 @@ function SubItemDetail({ nodeId, idx, dm }: { nodeId: string; idx: number; dm: b
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2 }}
-      className={`flex flex-col h-full overflow-y-auto ${tw(dm, 'card')}`}
+      className={`flex flex-col h-full ${tw(dm, 'card')}`}
     >
-      {/* Breadcrumb */}
-      <div className={`flex items-center gap-1.5 px-4 pt-4 pb-2 text-xs font-mono ${tw(dm, 'muted')}`}>
-        <span>{node.emoji}</span>
-        <span>{node.label}</span>
-        <ChevronRight size={10} />
-        <span>{item.emoji}</span>
-        <span style={{ color: node.color }}>{item.name}</span>
+      {/* Breadcrumb header */}
+      <div className="p-4 border-b" style={{ borderColor: node.color + '40', background: node.color + '10' }}>
+        <div className={`flex items-center gap-1.5 text-xs font-mono mb-2 ${tw(dm, 'muted')}`}>
+          <span>{node.emoji}</span><span>{node.label}</span>
+          <ChevronRight size={10} /><span style={{ color: node.color }}>{item.name}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">{item.emoji}</span>
+          <code className={`text-base font-mono font-bold ${tw(dm, 'heading')}`}>{item.name}</code>
+        </div>
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          <Badge color={layer.color}>{layer.label}</Badge>
+          <Badge color={node.color}>{node.label}</Badge>
+        </div>
       </div>
-      <div className="p-4 pt-0 space-y-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-2xl">{item.emoji}</span>
-            <code className={`text-lg font-mono font-bold ${tw(dm, 'heading')}`}>{item.name}</code>
-          </div>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <Badge color={layer.color}>{layer.label}</Badge>
-            <Badge color={node.color}>{node.label}</Badge>
-          </div>
-        </div>
-        <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{item.description}</p>
-        {item.example && (
-          <div>
-            <SectionLabel dm={dm} className="mb-1.5">Example</SectionLabel>
-            <pre className={`text-xs rounded-xl p-3 overflow-x-auto leading-relaxed font-mono ${dm ? 'bg-slate-900 text-emerald-300' : 'bg-slate-900 text-emerald-400'}`}>
-              {item.example}
-            </pre>
-          </div>
-        )}
-        <div className={`p-3 rounded-xl border-l-4`} style={{ borderColor: node.color, background: node.color + '10' }}>
-          <div className="text-xs font-bold mb-1" style={{ color: node.color }}>Part of</div>
-          <p className={`text-xs leading-relaxed ${tw(dm, 'body')}`}>{node.tagline}</p>
-        </div>
+
+      {deep && <DetailTabBar tabs={tabs} active={dTab} onSelect={setDTab} dm={dm} />}
+
+      <div className="flex-1 overflow-y-auto">
+        <AnimatePresence mode="wait">
+          {dTab === 'overview' && (
+            <motion.div key="sub-overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <div className="p-4 space-y-4">
+                <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{item.description}</p>
+                {item.example && (
+                  <div>
+                    <SectionLabel dm={dm} className="mb-1.5">Example</SectionLabel>
+                    <pre className={`text-xs rounded-xl p-3 overflow-x-auto leading-relaxed font-mono ${dm ? 'bg-[#0d1117] text-emerald-300' : 'bg-slate-900 text-emerald-400'}`}>{item.example}</pre>
+                  </div>
+                )}
+                <div className="p-3 rounded-xl border-l-4" style={{ borderColor: node.color, background: node.color + '10' }}>
+                  <div className="text-xs font-bold mb-1" style={{ color: node.color }}>Part of {node.label}</div>
+                  <p className={`text-xs leading-relaxed ${tw(dm, 'body')}`}>{node.tagline}</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+          {dTab === 'files' && deep && (
+            <motion.div key="sub-files" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <DeepFilesTab deep={deep} dm={dm} />
+            </motion.div>
+          )}
+          {dTab === 'usage' && deep && (
+            <motion.div key="sub-usage" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <DeepUsageTab deep={deep} nodeColor={node.color} dm={dm} />
+            </motion.div>
+          )}
+          {dTab === 'patterns' && deep && (
+            <motion.div key="sub-patterns" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <DeepPatternsTab deep={deep} dm={dm} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
@@ -1096,6 +1238,160 @@ function PatternsTab({ dm }: { dm: boolean }) {
 
 // ── Main page export ──────────────────────────────────────────────────────────
 
+// ── Learning path guided tour ─────────────────────────────────────────────────
+
+function LearningPathTab({ dm, onSwitchToMap }: { dm: boolean; onSwitchToMap: () => void }) {
+  const [stepIdx, setStepIdx] = useState(0);
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+
+  const current = learningPath[stepIdx];
+  const node = archNodes.find(n => n.id === current.nodeId);
+
+  const markComplete = () => {
+    setCompletedSteps(prev => new Set([...prev, stepIdx]));
+    if (stepIdx < learningPath.length - 1) { setStepIdx(stepIdx + 1); setShowAnswer(false); }
+  };
+  const goNext = () => { if (stepIdx < learningPath.length - 1) { setStepIdx(stepIdx + 1); setShowAnswer(false); } };
+  const goPrev = () => { if (stepIdx > 0) { setStepIdx(stepIdx - 1); setShowAnswer(false); } };
+
+  const progressPct = (completedSteps.size / learningPath.length) * 100;
+
+  return (
+    <div className="p-4 max-w-3xl mx-auto space-y-4">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className={`text-lg font-bold ${tw(dm, 'heading')}`}>🎓 Learn Claude Architecture</h2>
+          <p className={`text-xs mt-0.5 ${tw(dm, 'muted')}`}>10 steps · ~27 minutes · beginner to enterprise</p>
+        </div>
+        <div className="text-right shrink-0">
+          <div className={`text-sm font-bold ${tw(dm, 'heading')}`}>{completedSteps.size}/{learningPath.length}</div>
+          <div className={`text-xs ${tw(dm, 'muted')}`}>{Math.round(progressPct)}% done</div>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className={`h-2 rounded-full overflow-hidden ${dm ? 'bg-slate-800' : 'bg-slate-200'}`}>
+        <motion.div
+          className="h-full rounded-full bg-gradient-to-r from-violet-500 to-emerald-500"
+          animate={{ width: `${progressPct}%` }}
+          transition={{ duration: 0.5 }}
+        />
+      </div>
+
+      {/* Step pills */}
+      <div className="flex gap-1.5 flex-wrap">
+        {learningPath.map((step, i) => (
+          <button key={i} onClick={() => { setStepIdx(i); setShowAnswer(false); }}
+            title={step.title}
+            className={`w-7 h-7 rounded-full text-xs font-bold transition-all ${
+              i === stepIdx ? 'bg-violet-500 text-white scale-110 shadow-lg shadow-violet-500/30'
+              : completedSteps.has(i) ? dm ? 'bg-emerald-700 text-emerald-200' : 'bg-emerald-100 text-emerald-700'
+              : dm ? 'bg-slate-800 text-slate-400 hover:bg-slate-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+            }`}>
+            {i + 1}
+          </button>
+        ))}
+      </div>
+
+      {/* Current step */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={stepIdx}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.2 }}
+          className={`rounded-2xl border overflow-hidden ${tw(dm, 'card', 'border')}`}
+        >
+          {/* Step header */}
+          <div className="p-4 border-b" style={{ borderColor: (node?.color ?? '#6366f1') + '40', background: (node?.color ?? '#6366f1') + '10' }}>
+            <div className={`flex items-center gap-3`}>
+              <div className="w-9 h-9 rounded-xl bg-violet-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                {current.stepNum}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className={`text-base font-bold ${tw(dm, 'heading')}`}>{current.title}</div>
+                <div className={`flex items-center gap-2 text-xs mt-0.5 ${tw(dm, 'muted')}`}>
+                  <span>{node?.emoji} {node?.label}</span>
+                  <span>·</span>
+                  <span>⏱ {current.estimatedTime}</span>
+                </div>
+              </div>
+              {completedSteps.has(stepIdx) && <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />}
+            </div>
+          </div>
+
+          {/* Lesson content */}
+          <div className="p-5 space-y-4">
+            <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{current.lesson}</p>
+
+            {/* Key takeaway */}
+            <div className="p-3 rounded-xl border-l-4 border-violet-500" style={{ background: '#7c3aed15' }}>
+              <div className="text-xs font-bold text-violet-500 mb-1 uppercase tracking-wide">💡 Key Takeaway</div>
+              <p className={`text-sm font-medium leading-relaxed ${tw(dm, 'heading')}`}>{current.keyTakeaway}</p>
+            </div>
+
+            {/* Q&A accordion */}
+            <div className={`rounded-xl border overflow-hidden ${tw(dm, 'border')}`}>
+              <button
+                onClick={() => setShowAnswer(p => !p)}
+                className={`w-full flex items-center gap-2 p-3 text-left transition-colors ${tw(dm, 'cardAlt', 'hover')}`}
+              >
+                <span className="text-lg">❓</span>
+                <span className={`flex-1 text-sm font-medium ${tw(dm, 'body')}`}>{current.question}</span>
+                {showAnswer ? <ChevronUp size={14} className={tw(dm, 'muted')} /> : <ChevronDown size={14} className={tw(dm, 'muted')} />}
+              </button>
+              <AnimatePresence>
+                {showAnswer && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className={`px-4 py-3 border-t text-sm leading-relaxed ${tw(dm, 'body', 'border')}`}>
+                      <span className="text-emerald-500 font-semibold">✅ </span>{current.answer}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Action bar */}
+          <div className={`flex items-center gap-2 p-4 border-t ${tw(dm, 'border', 'section')}`}>
+            <button onClick={goPrev} disabled={stepIdx === 0}
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors disabled:opacity-30 ${tw(dm, 'cardAlt', 'hover')} ${tw(dm, 'body')}`}>
+              ← Prev
+            </button>
+            <button onClick={onSwitchToMap}
+              className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${tw(dm, 'cardAlt', 'hover')} ${tw(dm, 'muted')}`}>
+              View in Map →
+            </button>
+            <div className="flex-1" />
+            {!completedSteps.has(stepIdx) && (
+              <button onClick={markComplete}
+                className="px-4 py-1.5 rounded-lg text-sm font-semibold bg-emerald-500 hover:bg-emerald-600 text-white transition-colors">
+                Got it ✓
+              </button>
+            )}
+            {stepIdx < learningPath.length - 1 && (
+              <button onClick={goNext}
+                className="px-4 py-1.5 rounded-lg text-sm font-semibold bg-violet-500 hover:bg-violet-600 text-white transition-colors">
+                Next →
+              </button>
+            )}
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Main page export ──────────────────────────────────────────────────────────
+
 export function ArchitectureExplorerPage() {
   const { darkMode } = useAppStore();
   const dm = darkMode;
@@ -1152,6 +1448,7 @@ export function ArchitectureExplorerPage() {
             {activeTab === 'flows' && <SystemFlowsTab dm={dm} />}
             {activeTab === 'evolution' && <EvolutionTab dm={dm} />}
             {activeTab === 'patterns' && <PatternsTab dm={dm} />}
+            {activeTab === 'learn' && <LearningPathTab dm={dm} onSwitchToMap={() => setActiveTab('map')} />}
           </motion.div>
         </AnimatePresence>
       </div>
