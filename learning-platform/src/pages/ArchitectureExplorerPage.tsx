@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, Play, Pause, SkipForward, RotateCcw, Shield, Zap, CheckCircle2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronRight, Play, Pause, SkipForward, RotateCcw, Shield, Zap, CheckCircle2, Lock } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
 import { tw } from '@/lib/dm';
 import { SectionLabel, Badge, CollapsibleSection } from '@/components/ui';
@@ -8,7 +8,7 @@ import {
   archNodes, flowSimulations, evolutionStages, archPatterns,
   LAYER_META,
 } from '@/data/architectureExplorerData';
-import type { ArchNode, NodeLayer, FlowSimulation, EvolutionStage, ArchPattern } from '@/data/architectureExplorerData';
+import type { ArchNode, FlowSimulation, EvolutionStage, ArchPattern } from '@/data/architectureExplorerData';
 
 type TabId = 'map' | 'flows' | 'evolution' | 'patterns';
 type ViewMode = 'beginner' | 'developer' | 'architect' | 'enterprise' | 'ai-engineering';
@@ -45,180 +45,535 @@ const ACTOR_STYLES: Record<string, { bg: string; text: string; border: string }>
   infra:   { bg: 'bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-300' },
 };
 
-// ── Node card in the architecture map ────────────────────────────────────────
+// ── VS Code-style file tree ───────────────────────────────────────────────────
 
-function NodeCard({ node, selected, dm, onClick }: {
-  node: ArchNode;
-  selected: boolean;
+const VIEW_MODE_BANNERS: Record<ViewMode, { label: string; color: string; hint: string }> = {
+  'beginner':       { label: '📚 Conceptual',    color: '#10b981', hint: 'Focus: what is each piece and why does it exist?' },
+  'developer':      { label: '💻 Developer',      color: '#0ea5e9', hint: 'Focus: how to work with each piece, file structure, examples.' },
+  'architect':      { label: '🏗️ Architect',     color: '#8b5cf6', hint: 'Focus: how everything connects and why dependencies exist.' },
+  'enterprise':     { label: '🏢 Enterprise',     color: '#ef4444', hint: 'Focus: security risks, governance, compliance implications.' },
+  'ai-engineering': { label: '🤖 AI Engineering', color: '#f59e0b', hint: 'Focus: how agents, MCP, and orchestration layers interact.' },
+};
+
+function FileTree({ selectedNodeId, selectedSubIdx, onSelectNode, onSelectSubItem, viewMode, search, dm }: {
+  selectedNodeId: string;
+  selectedSubIdx: number | null;
+  onSelectNode: (id: string) => void;
+  onSelectSubItem: (nodeId: string, idx: number) => void;
+  viewMode: ViewMode;
+  search: string;
   dm: boolean;
-  onClick: () => void;
 }) {
-  const c = COMPLEXITY_COLORS[node.complexity];
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['claude-dir', 'agents', 'mcp']));
+
+  useEffect(() => {
+    if (viewMode === 'beginner') {
+      setExpanded(new Set());
+    } else {
+      setExpanded(new Set(['claude-dir', 'agents', 'mcp']));
+    }
+  }, [viewMode]);
+
+  const toggleExpand = (id: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const visibleNodes = archNodes.filter(n => {
+    if (viewMode === 'beginner' && n.layer > 2) return false;
+    const q = search.toLowerCase();
+    if (q) return (
+      n.label.toLowerCase().includes(q) ||
+      n.tagline.toLowerCase().includes(q) ||
+      (n.subItems ?? []).some(s => s.name.toLowerCase().includes(q))
+    );
+    return true;
+  });
+
+  const treeBg = dm ? '#0f172a' : '#f1f5f9';
+  const selectedBg = dm ? 'rgba(99,102,241,0.25)' : 'rgba(99,102,241,0.12)';
+  const hoverBg = dm ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+
   return (
-    <motion.button
-      onClick={onClick}
-      whileHover={{ scale: 1.03, y: -2 }}
-      whileTap={{ scale: 0.97 }}
-      className={`text-left p-3 rounded-xl border-2 transition-all w-full ${
-        selected
-          ? 'shadow-lg'
-          : dm ? 'bg-slate-800 border-slate-700 hover:border-slate-600' : 'bg-white border-slate-100 hover:border-slate-300'
-      }`}
-      style={selected ? {
-        borderColor: node.color,
-        boxShadow: `0 0 0 3px ${node.color}22, 0 8px 25px ${node.color}30`,
-        background: node.color + '10',
-      } : {}}
+    <div
+      className="shrink-0 h-full flex flex-col overflow-hidden border-r select-none"
+      style={{ width: 260, background: treeBg, borderColor: dm ? '#1e293b' : '#e2e8f0' }}
     >
-      <div className="flex items-start gap-2">
-        <span className="text-xl leading-none mt-0.5">{node.emoji}</span>
-        <div className="min-w-0 flex-1">
-          <div className={`text-xs font-bold leading-tight ${dm ? 'text-white' : 'text-slate-900'}`}>{node.label}</div>
-          <div className={`text-xs mt-1 leading-snug ${dm ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontSize: 10 }}>
-            {node.tagline.split(' — ')[0]}
-          </div>
-          <span className={`inline-block text-xs mt-1.5 px-1.5 py-0.5 rounded-full font-medium ${dm ? c.dark : `${c.bg} ${c.text}`}`} style={{ fontSize: 9 }}>
-            {c.label}
-          </span>
+      {/* Explorer header */}
+      <div
+        className="flex items-center justify-between px-3 py-2 border-b"
+        style={{ borderColor: dm ? '#1e293b' : '#e2e8f0', background: treeBg }}
+      >
+        <span className="text-xs font-bold uppercase tracking-widest" style={{ color: dm ? '#64748b' : '#94a3b8', fontSize: 10 }}>Explorer</span>
+        <span className="text-xs font-mono" style={{ color: dm ? '#475569' : '#94a3b8', fontSize: 9 }}>claude-native-project</span>
+      </div>
+
+      {/* Root folder label */}
+      <div className="flex items-center gap-1.5 px-2 py-1.5" style={{ color: dm ? '#94a3b8' : '#64748b' }}>
+        <ChevronDown size={11} />
+        <span className="text-xs font-bold uppercase tracking-wide" style={{ fontSize: 10 }}>CLAUDE-NATIVE-PROJECT</span>
+      </div>
+
+      {/* Tree items */}
+      <div className="flex-1 overflow-y-auto">
+        {visibleNodes.map(node => {
+          const isNodeSelected = selectedNodeId === node.id && selectedSubIdx === null;
+          const isExpanded = expanded.has(node.id);
+          const hasChildren = (node.subItems?.length ?? 0) > 0 && viewMode !== 'beginner';
+          const layer = LAYER_META[node.layer];
+          const isAiCore = node.type === 'agent' || node.type === 'mcp-node';
+
+          return (
+            <div key={node.id}>
+              {/* Node row */}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => onSelectNode(node.id)}
+                onKeyDown={e => e.key === 'Enter' && onSelectNode(node.id)}
+                className="flex items-center gap-0 py-0.5 cursor-pointer transition-colors"
+                style={{
+                  paddingLeft: 8,
+                  background: isNodeSelected ? selectedBg : undefined,
+                  borderLeft: isNodeSelected ? `2px solid #6366f1` : '2px solid transparent',
+                }}
+                onMouseEnter={e => { if (!isNodeSelected) (e.currentTarget as HTMLElement).style.background = hoverBg; }}
+                onMouseLeave={e => { if (!isNodeSelected) (e.currentTarget as HTMLElement).style.background = ''; }}
+              >
+                {/* Expand chevron */}
+                <span
+                  onClick={e => { e.stopPropagation(); if (hasChildren) toggleExpand(node.id); }}
+                  className="flex items-center justify-center shrink-0 transition-colors"
+                  style={{ width: 18, height: 22, color: dm ? '#475569' : '#94a3b8', cursor: hasChildren ? 'pointer' : 'default', opacity: hasChildren ? 1 : 0 }}
+                >
+                  {isExpanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+                </span>
+
+                {/* Emoji icon */}
+                <span style={{ fontSize: 13, lineHeight: 1, marginRight: 5 }}>{node.emoji}</span>
+
+                {/* Label */}
+                <span
+                  className="flex-1 truncate font-mono"
+                  style={{
+                    fontSize: 12,
+                    color: isNodeSelected
+                      ? (dm ? '#e2e8f0' : '#1e293b')
+                      : isAiCore && viewMode === 'ai-engineering'
+                        ? node.color
+                        : (dm ? '#cbd5e1' : '#475569'),
+                    fontWeight: isNodeSelected ? 600 : 400,
+                  }}
+                >
+                  {node.label}
+                </span>
+
+                {/* View-mode badges */}
+                {viewMode === 'architect' && node.relationships.length > 0 && (
+                  <span className="shrink-0 mr-2 font-mono" style={{ fontSize: 10, color: '#6366f1', opacity: 0.8 }}>
+                    →{node.relationships.length}
+                  </span>
+                )}
+                {viewMode === 'enterprise' && node.security && (
+                  <Lock size={9} className="shrink-0 mr-2" style={{ color: '#ef4444' }} />
+                )}
+                {viewMode === 'ai-engineering' && isAiCore && (
+                  <span className="shrink-0 mr-2 w-1.5 h-1.5 rounded-full" style={{ background: node.color }} />
+                )}
+                {viewMode === 'developer' && (
+                  <span className="shrink-0 mr-2 font-mono" style={{ fontSize: 9, color: layer.color, opacity: 0.7 }}>
+                    {COMPLEXITY_COLORS[node.complexity].label.toLowerCase()}
+                  </span>
+                )}
+              </div>
+
+              {/* Sub-items */}
+              <AnimatePresence>
+                {isExpanded && hasChildren && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="overflow-hidden"
+                  >
+                    {node.subItems?.map((item, idx) => {
+                      const isSubSelected = selectedNodeId === node.id && selectedSubIdx === idx;
+                      return (
+                        <div
+                          key={item.name}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => onSelectSubItem(node.id, idx)}
+                          onKeyDown={e => e.key === 'Enter' && onSelectSubItem(node.id, idx)}
+                          className="flex items-center gap-0 py-0.5 cursor-pointer transition-colors"
+                          style={{
+                            paddingLeft: 30,
+                            background: isSubSelected ? selectedBg : undefined,
+                            borderLeft: isSubSelected ? `2px solid #6366f1` : '2px solid transparent',
+                          }}
+                          onMouseEnter={e => { if (!isSubSelected) (e.currentTarget as HTMLElement).style.background = hoverBg; }}
+                          onMouseLeave={e => { if (!isSubSelected) (e.currentTarget as HTMLElement).style.background = ''; }}
+                        >
+                          <span style={{ width: 18, height: 22, flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, lineHeight: 1, marginRight: 5 }}>{item.emoji}</span>
+                          <span
+                            className="flex-1 truncate font-mono"
+                            style={{
+                              fontSize: 12,
+                              color: isSubSelected
+                                ? (dm ? '#e2e8f0' : '#1e293b')
+                                : (dm ? '#94a3b8' : '#64748b'),
+                              fontWeight: isSubSelected ? 600 : 400,
+                            }}
+                          >
+                            {item.name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Bottom legend */}
+      <div className="px-3 py-2 border-t" style={{ borderColor: dm ? '#1e293b' : '#e2e8f0' }}>
+        <div className="text-xs" style={{ color: dm ? '#475569' : '#94a3b8', fontSize: 10 }}>
+          {archNodes.length} items · {viewMode === 'beginner' ? 'simplified view' : 'full tree'}
         </div>
       </div>
-    </motion.button>
+    </div>
   );
 }
 
-// ── Rich detail panel for a selected node ────────────────────────────────────
+// ── Sub-item detail panel ─────────────────────────────────────────────────────
 
-function NodeDetailPanel({ node, allNodes, viewMode, dm, onNavigate }: {
+function SubItemDetail({ nodeId, idx, dm }: { nodeId: string; idx: number; dm: boolean }) {
+  const node = archNodes.find(n => n.id === nodeId);
+  if (!node || !node.subItems) return null;
+  const item = node.subItems[idx];
+  const layer = LAYER_META[node.layer];
+  return (
+    <motion.div
+      key={`${nodeId}-${idx}`}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2 }}
+      className={`flex flex-col h-full overflow-y-auto ${tw(dm, 'card')}`}
+    >
+      {/* Breadcrumb */}
+      <div className={`flex items-center gap-1.5 px-4 pt-4 pb-2 text-xs font-mono ${tw(dm, 'muted')}`}>
+        <span>{node.emoji}</span>
+        <span>{node.label}</span>
+        <ChevronRight size={10} />
+        <span>{item.emoji}</span>
+        <span style={{ color: node.color }}>{item.name}</span>
+      </div>
+      <div className="p-4 pt-0 space-y-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-2xl">{item.emoji}</span>
+            <code className={`text-lg font-mono font-bold ${tw(dm, 'heading')}`}>{item.name}</code>
+          </div>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <Badge color={layer.color}>{layer.label}</Badge>
+            <Badge color={node.color}>{node.label}</Badge>
+          </div>
+        </div>
+        <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{item.description}</p>
+        {item.example && (
+          <div>
+            <SectionLabel dm={dm} className="mb-1.5">Example</SectionLabel>
+            <pre className={`text-xs rounded-xl p-3 overflow-x-auto leading-relaxed font-mono ${dm ? 'bg-slate-900 text-emerald-300' : 'bg-slate-900 text-emerald-400'}`}>
+              {item.example}
+            </pre>
+          </div>
+        )}
+        <div className={`p-3 rounded-xl border-l-4`} style={{ borderColor: node.color, background: node.color + '10' }}>
+          <div className="text-xs font-bold mb-1" style={{ color: node.color }}>Part of</div>
+          <p className={`text-xs leading-relaxed ${tw(dm, 'body')}`}>{node.tagline}</p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Node detail panel — each view mode shows a completely different angle ─────
+
+function NodeDetailPanel({ node, viewMode, dm, onNavigate }: {
   node: ArchNode;
-  allNodes: ArchNode[];
   viewMode: ViewMode;
   dm: boolean;
   onNavigate: (id: string) => void;
 }) {
   const layer = LAYER_META[node.layer];
-  const relNodes = node.relationships.map(r => ({
-    rel: r,
-    node: allNodes.find(n => n.id === r.targetId),
-  })).filter(x => x.node);
+  const banner = VIEW_MODE_BANNERS[viewMode];
+  const relNodes = node.relationships
+    .map(r => ({ rel: r, rn: archNodes.find(n => n.id === r.targetId) }))
+    .filter(x => x.rn);
 
-  const showWhy = viewMode !== 'beginner';
-  const showSubItems = viewMode !== 'beginner';
-  const showRelationships = viewMode === 'architect' || viewMode === 'enterprise' || viewMode === 'ai-engineering';
-  const showSecurity = (viewMode === 'enterprise' || viewMode === 'architect') && !!node.security;
+  const Header = () => (
+    <div className="p-4 border-b" style={{ borderColor: node.color + '40', background: node.color + '12' }}>
+      {/* View-mode banner */}
+      <div
+        className="flex items-center gap-2 px-2 py-1 rounded-lg mb-3 text-xs font-medium"
+        style={{ background: banner.color + '18', color: banner.color }}
+      >
+        <span>{banner.label}</span>
+        <span className="opacity-60">— {banner.hint}</span>
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="text-3xl leading-none">{node.emoji}</span>
+        <div className="flex-1 min-w-0">
+          <div className={`text-base font-bold font-mono ${tw(dm, 'heading')}`}>{node.label}</div>
+          <div className="flex items-center gap-2 flex-wrap mt-1">
+            <Badge color={layer.color}>{layer.label}</Badge>
+            <Badge color={node.color}>{COMPLEXITY_COLORS[node.complexity].label}</Badge>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
-  return (
-    <motion.div
-      key={node.id}
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.25 }}
-      className={`flex flex-col h-full overflow-y-auto rounded-2xl border ${tw(dm, 'card', 'border')}`}
-    >
-      {/* Header */}
-      <div className="p-4 border-b" style={{ borderColor: node.color + '40', background: node.color + '10' }}>
-        <div className="flex items-start gap-3">
-          <span className="text-3xl leading-none">{node.emoji}</span>
-          <div className="flex-1 min-w-0">
-            <div className={`text-lg font-bold ${tw(dm, 'heading')}`}>{node.label}</div>
-            <div className="flex items-center gap-2 flex-wrap mt-1">
-              <Badge color={layer.color}>{layer.label}</Badge>
-              <Badge color={node.color}>{COMPLEXITY_COLORS[node.complexity].label}</Badge>
+  /* ── BEGINNER: analogy-first, no jargon ── */
+  if (viewMode === 'beginner') {
+    return (
+      <motion.div key={`${node.id}-beginner`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className={`flex flex-col h-full overflow-y-auto ${tw(dm, 'card')}`}>
+        <Header />
+        <div className="p-4 space-y-4">
+          <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{node.whatItIs.split('.')[0]}.</p>
+          <div className="p-4 rounded-2xl border-2" style={{ borderColor: node.color, background: node.color + '10' }}>
+            <div className="text-xs font-bold mb-2 uppercase tracking-wide" style={{ color: node.color }}>💡 Think of it like…</div>
+            <div className={`text-base font-bold mb-2 ${tw(dm, 'heading')}`}>{node.analogy}</div>
+            <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{node.analogyDetail}</p>
+          </div>
+          <div>
+            <SectionLabel dm={dm} className="mb-2">What it helps you do</SectionLabel>
+            <ul className="space-y-2">
+              {node.useCases.slice(0, 3).map((uc, i) => (
+                <li key={i} className={`flex items-start gap-2 text-sm ${tw(dm, 'body')}`}>
+                  <span className="text-emerald-500 mt-0.5 shrink-0">✓</span>{uc}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className={`p-3 rounded-xl text-xs ${dm ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+            Switch to <strong>Developer</strong> mode to see file structure and examples →
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  /* ── DEVELOPER: what + file structure + examples ── */
+  if (viewMode === 'developer') {
+    return (
+      <motion.div key={`${node.id}-developer`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className={`flex flex-col h-full overflow-y-auto ${tw(dm, 'card')}`}>
+        <Header />
+        <div className="p-4 space-y-4">
+          <div>
+            <SectionLabel dm={dm} className="mb-1.5">What It Is</SectionLabel>
+            <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{node.whatItIs}</p>
+          </div>
+          {node.subItems && node.subItems.length > 0 && (
+            <div>
+              <SectionLabel dm={dm} className="mb-2">File Structure</SectionLabel>
+              <div className={`rounded-xl overflow-hidden border font-mono ${tw(dm, 'border')}`}>
+                <div className={`px-3 py-1.5 text-xs font-bold border-b ${tw(dm, 'borderSub')} ${tw(dm, 'muted')}`}>
+                  {node.label}
+                </div>
+                {node.subItems.map((item, i) => (
+                  <div
+                    key={item.name}
+                    className={`flex items-start gap-2 px-3 py-2 border-b last:border-0 ${tw(dm, 'borderSub')}`}
+                  >
+                    <span className="text-sm shrink-0 mt-0.5">{item.emoji}</span>
+                    <div className="min-w-0 flex-1">
+                      <code className={`text-xs font-mono font-semibold ${dm ? 'text-sky-300' : 'text-sky-700'}`}>{item.name}</code>
+                      <p className={`text-xs mt-0.5 leading-relaxed ${tw(dm, 'muted')}`}>{item.description}</p>
+                      {item.example && (
+                        <span className={`text-xs font-mono mt-1 block ${dm ? 'text-emerald-400' : 'text-emerald-700'}`} style={{ fontSize: 10 }}>
+                          eg: {item.example}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs shrink-0 mt-0.5" style={{ color: node.color, fontSize: 10 }}>{i + 1}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <CollapsibleSection dm={dm} title={`Use Cases (${node.useCases.length})`} defaultOpen>
+            <ul className="p-3 space-y-1.5">
+              {node.useCases.map((uc, i) => (
+                <li key={i} className={`flex items-start gap-2 text-xs ${tw(dm, 'body')}`}>
+                  <span className="text-emerald-500 mt-0.5 shrink-0">✓</span>{uc}
+                </li>
+              ))}
+            </ul>
+          </CollapsibleSection>
+        </div>
+      </motion.div>
+    );
+  }
+
+  /* ── ARCHITECT: connections-first, dependency map ── */
+  if (viewMode === 'architect') {
+    return (
+      <motion.div key={`${node.id}-architect`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className={`flex flex-col h-full overflow-y-auto ${tw(dm, 'card')}`}>
+        <Header />
+        <div className="p-4 space-y-4">
+          <div>
+            <SectionLabel dm={dm} className="mb-1.5">Why It Exists</SectionLabel>
+            <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{node.whyItExists}</p>
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <SectionLabel dm={dm}>Architecture Connections</SectionLabel>
+              <Badge color={node.color}>{relNodes.length} links</Badge>
+            </div>
+            {relNodes.length > 0 ? (
+              <div className="space-y-2">
+                {relNodes.map(({ rel, rn }) => rn && (
+                  <button
+                    key={rel.targetId}
+                    onClick={() => onNavigate(rel.targetId)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all ${tw(dm, 'cardAlt', 'border', 'hover')}`}
+                  >
+                    <span className="text-lg shrink-0">{rn.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs font-mono font-semibold ${tw(dm, 'heading')}`}>{rn.label}</div>
+                      <div className={`text-xs ${tw(dm, 'muted')}`}>{rel.label}</div>
+                    </div>
+                    <span className="shrink-0 text-xs px-2 py-0.5 rounded-full font-mono" style={{ background: rn.color + '20', color: rn.color }}>
+                      {rel.type}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className={`text-xs ${tw(dm, 'muted')}`}>No outgoing relationships defined.</p>
+            )}
+          </div>
+          <CollapsibleSection dm={dm} title="What It Is">
+            <p className={`p-3 text-sm leading-relaxed ${tw(dm, 'body')}`}>{node.whatItIs}</p>
+          </CollapsibleSection>
+          <div className={`p-3 rounded-xl border-l-4`} style={{ borderColor: node.color, background: node.color + '10' }}>
+            <div className="text-xs font-bold mb-1" style={{ color: node.color }}>Analogy</div>
+            <div className={`text-sm font-semibold ${tw(dm, 'heading')}`}>{node.analogy}</div>
+            <p className={`text-xs mt-1 leading-relaxed ${tw(dm, 'body')}`}>{node.analogyDetail}</p>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  /* ── ENTERPRISE: security-first, governance focus ── */
+  if (viewMode === 'enterprise') {
+    return (
+      <motion.div key={`${node.id}-enterprise`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className={`flex flex-col h-full overflow-y-auto ${tw(dm, 'card')}`}>
+        <Header />
+        <div className="p-4 space-y-4">
+          {node.security ? (
+            <div className={`p-4 rounded-xl border-2 ${dm ? 'bg-red-900/15 border-red-700/50' : 'bg-red-50 border-red-300'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <Shield size={14} className="text-red-500 shrink-0" />
+                <span className="text-sm font-bold text-red-500">Security Consideration</span>
+              </div>
+              <p className={`text-sm leading-relaxed ${dm ? 'text-red-200' : 'text-red-800'}`}>{node.security}</p>
+            </div>
+          ) : (
+            <div className={`p-3 rounded-xl border ${dm ? 'bg-emerald-900/15 border-emerald-800/40' : 'bg-emerald-50 border-emerald-200'}`}>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={13} className="text-emerald-500" />
+                <span className={`text-xs font-semibold ${dm ? 'text-emerald-300' : 'text-emerald-700'}`}>No specific security concerns documented for this component.</span>
+              </div>
+            </div>
+          )}
+          <div>
+            <SectionLabel dm={dm} className="mb-1.5">Why It Exists (Governance Context)</SectionLabel>
+            <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{node.whyItExists}</p>
+          </div>
+          <div>
+            <SectionLabel dm={dm} className="mb-2">Enterprise Use Cases</SectionLabel>
+            <ul className="space-y-1.5">
+              {node.useCases.map((uc, i) => (
+                <li key={i} className={`flex items-start gap-2 text-xs ${tw(dm, 'body')}`}>
+                  <span className="text-slate-400 mt-0.5 shrink-0 font-mono">{String(i + 1).padStart(2, '0')}.</span>{uc}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className={`p-3 rounded-xl ${tw(dm, 'section', 'border')} border`}>
+            <SectionLabel dm={dm} className="mb-1.5">Complexity Tier</SectionLabel>
+            <div className="flex items-center gap-2">
+              <span className={`px-2 py-1 rounded-lg text-xs font-bold ${dm ? COMPLEXITY_COLORS[node.complexity].dark : `${COMPLEXITY_COLORS[node.complexity].bg} ${COMPLEXITY_COLORS[node.complexity].text}`}`}>
+                {COMPLEXITY_COLORS[node.complexity].label}
+              </span>
+              <span className={`text-xs ${tw(dm, 'muted')}`}>— adopt when your team size and system complexity justify it</span>
             </div>
           </div>
         </div>
-        <p className={`text-sm mt-3 italic leading-relaxed ${tw(dm, 'muted')}`}>{node.tagline}</p>
-      </div>
+      </motion.div>
+    );
+  }
 
-      <div className="flex-1 p-4 space-y-5">
-        {/* What it is */}
-        <div>
-          <SectionLabel dm={dm} className="mb-2">What It Is</SectionLabel>
+  /* ── AI ENGINEERING: orchestration + AI context ── */
+  return (
+    <motion.div key={`${node.id}-ai`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className={`flex flex-col h-full overflow-y-auto ${tw(dm, 'card')}`}>
+      <Header />
+      <div className="p-4 space-y-4">
+        <div className={`p-3 rounded-xl border-l-4`} style={{ borderColor: node.color, background: node.color + '10' }}>
+          <div className="text-xs font-bold mb-1" style={{ color: node.color }}>AI Role</div>
           <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{node.whatItIs}</p>
         </div>
-
-        {/* Why it exists */}
-        {showWhy && (
-          <div>
-            <SectionLabel dm={dm} className="mb-2">Why It Exists</SectionLabel>
-            <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{node.whyItExists}</p>
-          </div>
-        )}
-
-        {/* Analogy */}
-        <div className={`p-3 rounded-xl border-l-4`} style={{ borderColor: node.color, background: node.color + '10' }}>
-          <div className="text-xs font-bold mb-1" style={{ color: node.color }}>💡 Analogy</div>
-          <div className={`text-sm font-semibold ${tw(dm, 'heading')}`}>{node.analogy}</div>
-          {viewMode !== 'beginner' && (
-            <p className={`text-xs mt-1.5 leading-relaxed ${tw(dm, 'body')}`}>{node.analogyDetail}</p>
-          )}
+        <div>
+          <SectionLabel dm={dm} className="mb-1.5">Why AI Systems Need This</SectionLabel>
+          <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{node.whyItExists}</p>
         </div>
-
-        {/* Use cases */}
-        <CollapsibleSection dm={dm} title="Real-World Use Cases" defaultOpen={true}>
-          <ul className="p-3 space-y-1.5">
-            {node.useCases.map((uc, i) => (
-              <li key={i} className={`flex items-start gap-2 text-xs ${tw(dm, 'body')}`}>
-                <span className="text-emerald-500 mt-0.5 shrink-0">✓</span>
-                <span>{uc}</span>
-              </li>
-            ))}
-          </ul>
-        </CollapsibleSection>
-
-        {/* Sub-items */}
-        {showSubItems && node.subItems && node.subItems.length > 0 && (
-          <CollapsibleSection dm={dm} title="Contents & Sub-items" defaultOpen={viewMode === 'developer'}>
-            <div className="p-3 space-y-2.5">
+        {node.subItems && node.subItems.length > 0 && (
+          <div>
+            <SectionLabel dm={dm} className="mb-2">AI-Relevant Sub-components</SectionLabel>
+            <div className="space-y-2">
               {node.subItems.map((item) => (
-                <div key={item.name} className={`p-2.5 rounded-lg ${tw(dm, 'cardAlt')}`}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-sm">{item.emoji}</span>
-                    <code className={`text-xs font-mono font-bold ${dm ? 'text-sky-300' : 'text-sky-700'}`}>{item.name}</code>
+                <div key={item.name} className={`flex items-start gap-2.5 p-2.5 rounded-lg ${tw(dm, 'cardAlt')}`}>
+                  <span className="text-base shrink-0">{item.emoji}</span>
+                  <div>
+                    <code className={`text-xs font-mono font-bold ${dm ? 'text-amber-300' : 'text-amber-700'}`}>{item.name}</code>
+                    <p className={`text-xs mt-0.5 leading-relaxed ${tw(dm, 'muted')}`}>{item.description}</p>
                   </div>
-                  <p className={`text-xs leading-relaxed ${tw(dm, 'muted')}`}>{item.description}</p>
-                  {item.example && (
-                    <div className={`mt-1.5 text-xs font-mono px-2 py-1 rounded ${dm ? 'bg-slate-900 text-emerald-400' : 'bg-slate-900 text-emerald-400'}`} style={{ fontSize: 10 }}>
-                      {item.example}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
-          </CollapsibleSection>
+          </div>
         )}
-
-        {/* Relationships */}
-        {showRelationships && relNodes.length > 0 && (
+        {relNodes.length > 0 && (
           <div>
-            <SectionLabel dm={dm} className="mb-2">Architecture Connections</SectionLabel>
+            <SectionLabel dm={dm} className="mb-2">Orchestration Connections</SectionLabel>
             <div className="space-y-1.5">
-              {relNodes.map(({ rel, node: rn }) => rn && (
-                <button
-                  key={rel.targetId}
-                  onClick={() => onNavigate(rel.targetId)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs transition-colors ${tw(dm, 'cardAlt', 'hover')}`}
-                >
-                  <span className="text-sm">{rn.emoji}</span>
-                  <span className={`font-semibold ${tw(dm, 'body')}`}>{rn.label}</span>
-                  <span className={tw(dm, 'muted')}>— {rel.label}</span>
-                  <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full" style={{ background: rn.color + '20', color: rn.color }}>
-                    {rel.type}
-                  </span>
+              {relNodes.map(({ rel, rn }) => rn && (
+                <button key={rel.targetId} onClick={() => onNavigate(rel.targetId)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs transition-colors ${tw(dm, 'section', 'hover')}`}>
+                  <span>{rn.emoji}</span>
+                  <span className={`font-mono font-semibold ${tw(dm, 'body')}`}>{rn.label}</span>
+                  <span className={`${tw(dm, 'muted')} flex-1`}>— {rel.label}</span>
+                  <span className="shrink-0 font-mono" style={{ color: rn.color, fontSize: 10 }}>{rel.type}</span>
                 </button>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Security */}
-        {showSecurity && node.security && (
-          <div className={`p-3 rounded-xl border ${dm ? 'bg-red-900/10 border-red-800/40' : 'bg-red-50 border-red-200'}`}>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Shield size={12} className="text-red-500" />
-              <span className="text-xs font-bold text-red-500">Security Note</span>
-            </div>
-            <p className={`text-xs leading-relaxed ${dm ? 'text-red-300' : 'text-red-700'}`}>{node.security}</p>
           </div>
         )}
       </div>
@@ -229,120 +584,74 @@ function NodeDetailPanel({ node, allNodes, viewMode, dm, onNavigate }: {
 // ── Architecture Map tab ──────────────────────────────────────────────────────
 
 function ArchitectureMapTab({ dm }: { dm: boolean }) {
-  const [selectedId, setSelectedId] = useState<string>('claude-md');
+  const [selectedNodeId, setSelectedNodeId] = useState<string>('claude-md');
+  const [selectedSubIdx, setSelectedSubIdx] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('developer');
   const [search, setSearch] = useState('');
 
-  const selectedNode = archNodes.find(n => n.id === selectedId) ?? archNodes[0];
+  const selectedNode = archNodes.find(n => n.id === selectedNodeId) ?? archNodes[0];
 
-  const layers: NodeLayer[] = [0, 1, 2, 3, 4];
-
-  const filteredNodes = (layer: NodeLayer) =>
-    archNodes.filter(n => {
-      if (n.layer !== layer) return false;
-      if (search && !n.label.toLowerCase().includes(search.toLowerCase()) &&
-          !n.tagline.toLowerCase().includes(search.toLowerCase())) return false;
-      // Beginner mode hides deeper layers partially
-      if (viewMode === 'beginner' && layer > 2 && n.id !== 'tests' && n.id !== 'github') return false;
-      return true;
-    });
+  const handleSelectNode = (id: string) => { setSelectedNodeId(id); setSelectedSubIdx(null); };
+  const handleSelectSubItem = (nodeId: string, idx: number) => { setSelectedNodeId(nodeId); setSelectedSubIdx(idx); };
 
   return (
     <div className="flex flex-col h-full">
-      {/* Controls */}
-      <div className={`flex flex-wrap items-center gap-3 px-4 pt-4 pb-3 border-b ${tw(dm, 'border')}`}>
-        {/* View mode selector */}
+      {/* Top controls */}
+      <div className={`flex flex-wrap items-center gap-2 px-4 py-2.5 border-b ${tw(dm, 'border')}`}>
         <div className="flex items-center gap-1 flex-wrap">
-          {VIEW_MODES.map(vm => (
-            <button
-              key={vm.id}
-              onClick={() => setViewMode(vm.id)}
-              title={vm.description}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                viewMode === vm.id
-                  ? 'bg-violet-500 text-white shadow-sm'
-                  : dm ? 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {vm.label}
-            </button>
-          ))}
+          {VIEW_MODES.map(vm => {
+            const b = VIEW_MODE_BANNERS[vm.id];
+            return (
+              <button
+                key={vm.id}
+                onClick={() => setViewMode(vm.id)}
+                title={vm.description}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === vm.id ? 'text-white shadow-sm' : dm ? 'bg-slate-800 text-slate-400 hover:text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+                style={viewMode === vm.id ? { background: b.color } : {}}
+              >
+                {b.label}
+              </button>
+            );
+          })}
         </div>
-        {/* Search */}
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Filter nodes…"
-          className={`px-3 py-1.5 rounded-lg text-xs border outline-none ml-auto ${tw(dm, 'input')}`}
-          style={{ minWidth: 140 }}
+          placeholder="Search files…"
+          className={`px-3 py-1.5 rounded-lg text-xs border outline-none ml-auto font-mono ${tw(dm, 'input')}`}
+          style={{ minWidth: 150 }}
         />
       </div>
 
+      {/* Main: tree + detail */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Left: Architecture layers */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {layers.map(layer => {
-            const meta = LAYER_META[layer];
-            const nodes = filteredNodes(layer);
-            if (nodes.length === 0) return null;
-            return (
-              <div key={layer} className={`rounded-xl border ${tw(dm, 'border')} overflow-hidden`}>
-                {/* Layer header */}
-                <div
-                  className="flex items-center gap-3 px-4 py-2.5"
-                  style={{ background: meta.color + '15', borderBottom: `1px solid ${meta.color}30` }}
-                >
-                  <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: meta.color }} />
-                  <span className="text-xs font-bold" style={{ color: meta.color }}>{meta.label.toUpperCase()}</span>
-                  <span className={`text-xs ${tw(dm, 'muted')}`}>{meta.description}</span>
-                </div>
-                {/* Nodes grid */}
-                <div className={`p-3 grid gap-2 ${layer === 0 || layer === 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'}`}>
-                  {nodes.map(node => (
-                    <NodeCard
-                      key={node.id}
-                      node={node}
-                      selected={selectedId === node.id}
-                      dm={dm}
-                      onClick={() => setSelectedId(node.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+        <FileTree
+          selectedNodeId={selectedNodeId}
+          selectedSubIdx={selectedSubIdx}
+          onSelectNode={handleSelectNode}
+          onSelectSubItem={handleSelectSubItem}
+          viewMode={viewMode}
+          search={search}
+          dm={dm}
+        />
 
-          {/* Layer flow arrows */}
-          <div className={`flex items-center justify-center gap-2 py-2 ${tw(dm, 'muted')}`} style={{ fontSize: 10 }}>
-            <span>Config</span>
-            <motion.span animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>→</motion.span>
-            <span>Claude Layer</span>
-            <motion.span animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.3 }}>→</motion.span>
-            <span>Application</span>
-            <motion.span animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.6 }}>→</motion.span>
-            <span>AI Core</span>
-            <motion.span animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.9 }}>→</motion.span>
-            <span>Foundation</span>
-          </div>
-        </div>
-
-        {/* Right: Detail panel */}
-        <div className="w-80 lg:w-96 shrink-0 p-4 overflow-hidden flex flex-col border-l" style={{ borderColor: dm ? '#334155' : '#e2e8f0' }}>
-          <div className={`text-xs font-medium mb-3 ${tw(dm, 'muted')}`}>
-            Click any node to explore it
-          </div>
-          <div className="flex-1 min-h-0">
-            <AnimatePresence mode="wait">
+        {/* Detail panel */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <AnimatePresence mode="wait">
+            {selectedSubIdx !== null ? (
+              <SubItemDetail key={`${selectedNodeId}-${selectedSubIdx}`} nodeId={selectedNodeId} idx={selectedSubIdx} dm={dm} />
+            ) : (
               <NodeDetailPanel
-                key={selectedId}
+                key={`${selectedNodeId}-${viewMode}`}
                 node={selectedNode}
-                allNodes={archNodes}
                 viewMode={viewMode}
                 dm={dm}
-                onNavigate={(id) => setSelectedId(id)}
+                onNavigate={handleSelectNode}
               />
-            </AnimatePresence>
-          </div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>
