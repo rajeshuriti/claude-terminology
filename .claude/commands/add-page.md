@@ -3,9 +3,10 @@ Scaffold a new page in this learning platform. The user will provide the page na
 ## Page file (`src/pages/<Name>Page.tsx`)
 
 ```tsx
-import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/appStore';
+// Only add `import { useState } from 'react'` if the page actually uses local state.
+// noUnusedLocals is enforced — unused imports are a compile error.
 
 // Sub-components go here, above the main component.
 // Each sub-component accepts `dm: boolean` as a prop for dark mode.

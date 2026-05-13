@@ -9,7 +9,11 @@
       "Bash(npx tsc --noEmit *)",
       "Bash(find * -name \"*.ts\" *)",
       "Bash(find * -name \"*.tsx\" *)",
-      "Bash(find * -name \"*.ts\" -o -name \"*.tsx\" *)"
+      "Bash(find * -name \"*.ts\" -o -name \"*.tsx\" *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git log --oneline *)"
     ]
   },
   "hooks": {
@@ -19,7 +23,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"d:/Development/claude-certification/claude-terminology/learning-platform\" && npx tsc --noEmit 2>&1 | head -30"
+            "command": "cd learning-platform && npx tsc --noEmit 2>&1 | head -30"
           }
         ]
       }
