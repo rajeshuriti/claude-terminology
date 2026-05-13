@@ -22,7 +22,8 @@ const navItems = [
   { path: '/bookmarks', icon: Bookmark, label: 'Bookmarks' },
   { path: '/internals', icon: null, label: 'Claude Internals', emoji: '⚙️', isNew: false },
   { path: '/commands', icon: null, label: 'Commands Studio', emoji: '/', isNew: false },
-  { path: '/certification', icon: null, label: 'Cert Practice Exam', emoji: '🏆', isNew: true },
+  { path: '/certification', icon: null, label: 'Cert Practice Exam', emoji: '🏆', isNew: false },
+  { path: '/study', icon: null, label: 'Exam Study Guide', emoji: '📖', isNew: true },
 ];
 
 function SidebarContent({ onClose }: { onClose: () => void }) {
@@ -89,7 +90,9 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
                       ? 'bg-gradient-to-r from-sky-500 to-emerald-500 text-white shadow-sm'
                       : path === '/certification'
                         ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm'
-                        : 'bg-sky-500 text-white shadow-sm'
+                        : path === '/study'
+                          ? 'bg-gradient-to-r from-emerald-500 to-sky-500 text-white shadow-sm'
+                          : 'bg-sky-500 text-white shadow-sm'
                   : darkMode
                     ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'

@@ -12,6 +12,7 @@ import { BookmarksPage } from '@/pages/BookmarksPage';
 import { ClaudeInternalsPage } from '@/pages/ClaudeInternalsPage';
 import { SlashCommandsStudioPage } from '@/pages/SlashCommandsStudioPage';
 import { CertificationPracticePage } from '@/pages/CertificationPracticePage';
+import { StudyMaterialsPage } from '@/pages/StudyMaterialsPage';
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/internals" element={<ClaudeInternalsPage />} />
           <Route path="/commands" element={<SlashCommandsStudioPage />} />
           <Route path="/certification" element={<CertificationPracticePage />} />
+          <Route path="/study" element={<StudyMaterialsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
