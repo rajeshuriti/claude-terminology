@@ -67,12 +67,15 @@ function FileTree({ selectedNodeId, selectedSubIdx, onSelectNode, onSelectSubIte
   dm: boolean;
 }) {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['claude-dir', 'agents', 'mcp']));
+  const [expandedSubs, setExpandedSubs] = useState<Set<string>>(() => new Set(['claude-dir/0', 'claude-dir/1']));
 
   useEffect(() => {
     if (viewMode === 'beginner') {
       setExpanded(new Set());
+      setExpandedSubs(new Set());
     } else {
       setExpanded(new Set(['claude-dir', 'agents', 'mcp']));
+      setExpandedSubs(new Set(['claude-dir/0', 'claude-dir/1']));
     }
   }, [viewMode]);
 
@@ -80,6 +83,14 @@ function FileTree({ selectedNodeId, selectedSubIdx, onSelectNode, onSelectSubIte
     setExpanded(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSubExpand = (key: string) => {
+    setExpandedSubs(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
   };
@@ -192,7 +203,7 @@ function FileTree({ selectedNodeId, selectedSubIdx, onSelectNode, onSelectSubIte
                 )}
               </div>
 
-              {/* Sub-items */}
+              {/* Sub-items (level 2) */}
               <AnimatePresence>
                 {isExpanded && hasChildren && (
                   <motion.div
@@ -204,36 +215,86 @@ function FileTree({ selectedNodeId, selectedSubIdx, onSelectNode, onSelectSubIte
                   >
                     {node.subItems?.map((item, idx) => {
                       const isSubSelected = selectedNodeId === node.id && selectedSubIdx === idx;
+                      const subKey = `${node.id}/${idx}`;
+                      const hasSubChildren = (item.children?.length ?? 0) > 0;
+                      const isSubExpanded = expandedSubs.has(subKey);
                       return (
-                        <div
-                          key={item.name}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => onSelectSubItem(node.id, idx)}
-                          onKeyDown={e => e.key === 'Enter' && onSelectSubItem(node.id, idx)}
-                          className="flex items-center gap-0 py-0.5 cursor-pointer transition-colors"
-                          style={{
-                            paddingLeft: 30,
-                            background: isSubSelected ? selectedBg : undefined,
-                            borderLeft: isSubSelected ? `2px solid #6366f1` : '2px solid transparent',
-                          }}
-                          onMouseEnter={e => { if (!isSubSelected) (e.currentTarget as HTMLElement).style.background = hoverBg; }}
-                          onMouseLeave={e => { if (!isSubSelected) (e.currentTarget as HTMLElement).style.background = ''; }}
-                        >
-                          <span style={{ width: 18, height: 22, flexShrink: 0 }} />
-                          <span style={{ fontSize: 12, lineHeight: 1, marginRight: 5 }}>{item.emoji}</span>
-                          <span
-                            className="flex-1 truncate font-mono"
-                            style={{
-                              fontSize: 12,
-                              color: isSubSelected
-                                ? (dm ? '#e2e8f0' : '#1e293b')
-                                : (dm ? '#94a3b8' : '#64748b'),
-                              fontWeight: isSubSelected ? 600 : 400,
+                        <div key={item.name}>
+                          {/* Sub-item row */}
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => {
+                              onSelectSubItem(node.id, idx);
+                              if (hasSubChildren) toggleSubExpand(subKey);
                             }}
+                            onKeyDown={e => e.key === 'Enter' && onSelectSubItem(node.id, idx)}
+                            className="flex items-center gap-0 py-0.5 cursor-pointer transition-colors"
+                            style={{
+                              paddingLeft: 30,
+                              background: isSubSelected ? selectedBg : undefined,
+                              borderLeft: isSubSelected ? `2px solid #6366f1` : '2px solid transparent',
+                            }}
+                            onMouseEnter={e => { if (!isSubSelected) (e.currentTarget as HTMLElement).style.background = hoverBg; }}
+                            onMouseLeave={e => { if (!isSubSelected) (e.currentTarget as HTMLElement).style.background = ''; }}
                           >
-                            {item.name}
-                          </span>
+                            {/* Expand chevron for sub-folder */}
+                            <span
+                              onClick={e => { e.stopPropagation(); if (hasSubChildren) toggleSubExpand(subKey); }}
+                              style={{ width: 16, height: 20, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: dm ? '#475569' : '#94a3b8', cursor: hasSubChildren ? 'pointer' : 'default', opacity: hasSubChildren ? 1 : 0 }}
+                            >
+                              {isSubExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+                            </span>
+                            <span style={{ fontSize: 12, lineHeight: 1, marginRight: 5 }}>{item.emoji}</span>
+                            <span
+                              className="flex-1 truncate font-mono"
+                              style={{
+                                fontSize: 12,
+                                color: isSubSelected
+                                  ? (dm ? '#e2e8f0' : '#1e293b')
+                                  : (dm ? '#94a3b8' : '#64748b'),
+                                fontWeight: isSubSelected ? 600 : 400,
+                              }}
+                            >
+                              {item.name}
+                            </span>
+                          </div>
+
+                          {/* Children (level 3) */}
+                          <AnimatePresence>
+                            {isSubExpanded && hasSubChildren && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.12 }}
+                                className="overflow-hidden"
+                              >
+                                {item.children?.map(child => (
+                                  <div
+                                    key={child.name}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => onSelectSubItem(node.id, idx)}
+                                    onKeyDown={e => e.key === 'Enter' && onSelectSubItem(node.id, idx)}
+                                    className="flex items-center gap-0 py-0.5 cursor-pointer"
+                                    style={{ paddingLeft: 52 }}
+                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = hoverBg; }}
+                                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ''; }}
+                                  >
+                                    <span style={{ width: 16, height: 18, flexShrink: 0 }} />
+                                    <span style={{ fontSize: 11, lineHeight: 1, marginRight: 4 }}>{child.emoji}</span>
+                                    <span
+                                      className="flex-1 truncate font-mono"
+                                      style={{ fontSize: 11, color: dm ? '#64748b' : '#94a3b8' }}
+                                    >
+                                      {child.name}
+                                    </span>
+                                  </div>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       );
                     })}

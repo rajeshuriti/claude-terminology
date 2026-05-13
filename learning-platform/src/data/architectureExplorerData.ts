@@ -15,6 +15,7 @@ export interface ArchSubItem {
   emoji: string;
   description: string;
   example?: string;
+  children?: Array<{ name: string; emoji: string }>;
 }
 
 export interface ArchNode {
@@ -139,14 +140,72 @@ export const archNodes: ArchNode[] = [
       'playbooks/ — incident response, rollback procedures, emergency operations',
     ],
     subItems: [
-      { name: 'rules/', emoji: '📏', description: 'Engineering laws Claude must follow. Like coding standards, but enforced by AI through context injection.', example: 'dark-mode.md, typescript.md, components.md' },
-      { name: 'commands/', emoji: '⚡', description: 'Slash commands that trigger predefined prompts. Like keyboard shortcuts for complex multi-step operations.', example: '/add-page, /fix-ts, /add-enriched-content' },
-      { name: 'skills/', emoji: '🎯', description: 'Expert knowledge modules injected into Claude context for specific domains. Claude temporarily "becomes" the expert.', example: 'security-auditor.md, rag-specialist.md' },
-      { name: 'workflows/', emoji: '🔄', description: 'Multi-step operational procedures for complex engineering tasks. Like runbooks but for AI collaboration.', example: 'deploy-workflow.md, migration-workflow.md' },
-      { name: 'playbooks/', emoji: '📚', description: 'Emergency and incident response procedures. Activated when things go wrong.', example: 'incident-response.md, rollback.md, data-recovery.md' },
-      { name: 'templates/', emoji: '📄', description: 'Boilerplate starters for new pages, components, or services following project conventions exactly.', example: 'page-template.md, service-template.md' },
-      { name: 'examples/', emoji: '💡', description: 'Reference implementations showing correct patterns. Prevents Claude from inventing approaches that conflict with existing patterns.', example: 'correct-dark-mode.tsx, correct-error-handling.ts' },
-      { name: 'context/', emoji: '📦', description: 'Background knowledge injected on demand into specific sessions. Domain expertise without polluting CLAUDE.md.', example: 'business-context.md, user-research.md, architecture-history.md' },
+      { name: 'rules/', emoji: '📏', description: 'Engineering laws Claude must follow. Like coding standards, but enforced by AI through context injection.', example: 'dark-mode.md, typescript.md, components.md',
+        children: [
+          { name: 'typescript.md', emoji: '📄' },
+          { name: 'dark-mode.md', emoji: '📄' },
+          { name: 'components.md', emoji: '📄' },
+          { name: 'security.md', emoji: '📄' },
+          { name: 'api-conventions.md', emoji: '📄' },
+        ]
+      },
+      { name: 'commands/', emoji: '⚡', description: 'Slash commands that trigger predefined prompts. Like keyboard shortcuts for complex multi-step operations.', example: '/add-page, /fix-ts, /add-enriched-content',
+        children: [
+          { name: 'add-page.md', emoji: '📄' },
+          { name: 'fix-ts.md', emoji: '📄' },
+          { name: 'review-pr.md', emoji: '📄' },
+          { name: 'add-enriched-content.md', emoji: '📄' },
+          { name: 'run-evals.md', emoji: '📄' },
+        ]
+      },
+      { name: 'skills/', emoji: '🎯', description: 'Expert knowledge modules injected into Claude context for specific domains. Claude temporarily "becomes" the expert.', example: 'security-auditor.md, rag-specialist.md',
+        children: [
+          { name: 'security-auditor.md', emoji: '📄' },
+          { name: 'rag-specialist.md', emoji: '📄' },
+          { name: 'api-designer.md', emoji: '📄' },
+          { name: 'code-reviewer.md', emoji: '📄' },
+        ]
+      },
+      { name: 'workflows/', emoji: '🔄', description: 'Multi-step operational procedures for complex engineering tasks. Like runbooks but for AI collaboration.', example: 'deploy-workflow.md, migration-workflow.md',
+        children: [
+          { name: 'deploy-workflow.md', emoji: '📄' },
+          { name: 'migration-workflow.md', emoji: '📄' },
+          { name: 'rollback-workflow.md', emoji: '📄' },
+          { name: 'onboarding-workflow.md', emoji: '📄' },
+        ]
+      },
+      { name: 'playbooks/', emoji: '📚', description: 'Emergency and incident response procedures. Activated when things go wrong.', example: 'incident-response.md, rollback.md, data-recovery.md',
+        children: [
+          { name: 'incident-response.md', emoji: '📄' },
+          { name: 'rollback.md', emoji: '📄' },
+          { name: 'data-recovery.md', emoji: '📄' },
+          { name: 'credential-rotation.md', emoji: '📄' },
+        ]
+      },
+      { name: 'templates/', emoji: '📄', description: 'Boilerplate starters for new pages, components, or services following project conventions exactly.', example: 'page-template.md, service-template.md',
+        children: [
+          { name: 'page-template.md', emoji: '📄' },
+          { name: 'service-template.md', emoji: '📄' },
+          { name: 'agent-template.md', emoji: '📄' },
+          { name: 'mcp-server-template.md', emoji: '📄' },
+        ]
+      },
+      { name: 'examples/', emoji: '💡', description: 'Reference implementations showing correct patterns. Prevents Claude from inventing approaches that conflict with existing patterns.', example: 'correct-dark-mode.tsx, correct-error-handling.ts',
+        children: [
+          { name: 'correct-dark-mode.tsx', emoji: '📄' },
+          { name: 'correct-error-handling.ts', emoji: '📄' },
+          { name: 'correct-mcp-tool.ts', emoji: '📄' },
+          { name: 'correct-agent-loop.ts', emoji: '📄' },
+        ]
+      },
+      { name: 'context/', emoji: '📦', description: 'Background knowledge injected on demand into specific sessions. Domain expertise without polluting CLAUDE.md.', example: 'business-context.md, user-research.md, architecture-history.md',
+        children: [
+          { name: 'business-context.md', emoji: '📄' },
+          { name: 'architecture-history.md', emoji: '📄' },
+          { name: 'user-research.md', emoji: '📄' },
+          { name: 'tech-debt-tracker.md', emoji: '📄' },
+        ]
+      },
     ],
     relationships: [
       { targetId: 'claude-md', type: 'extends', label: 'extends config from' },
@@ -209,9 +268,31 @@ export const archNodes: ArchNode[] = [
       'gateway-service handles rate limiting, routing, and auth verification for all traffic',
     ],
     subItems: [
-      { name: 'auth-service/', emoji: '🔐', description: 'Identity, JWT generation, OAuth2. The trust anchor — all other services verify tokens it issues.', example: 'POST /auth/token, POST /auth/refresh, GET /auth/me' },
-      { name: 'ai-orchestrator/', emoji: '🎭', description: 'Routes requests to Claude, manages conversation state, handles tool use lifecycle and MCP connections.', example: 'POST /ai/chat, GET /ai/conversations/:id' },
-      { name: 'vector-service/', emoji: '🔢', description: 'Embedding storage and similarity search. Powers RAG — finding relevant context before sending to Claude.', example: 'POST /vectors/upsert, POST /vectors/search?limit=5' },
+      { name: 'auth-service/', emoji: '🔐', description: 'Identity, JWT generation, OAuth2. The trust anchor — all other services verify tokens it issues.', example: 'POST /auth/token, POST /auth/refresh, GET /auth/me',
+        children: [
+          { name: 'index.ts', emoji: '📄' },
+          { name: 'jwt.ts', emoji: '📄' },
+          { name: 'oauth.ts', emoji: '📄' },
+          { name: 'middleware.ts', emoji: '📄' },
+          { name: 'routes.ts', emoji: '📄' },
+        ]
+      },
+      { name: 'ai-orchestrator/', emoji: '🎭', description: 'Routes requests to Claude, manages conversation state, handles tool use lifecycle and MCP connections.', example: 'POST /ai/chat, GET /ai/conversations/:id',
+        children: [
+          { name: 'index.ts', emoji: '📄' },
+          { name: 'claude-client.ts', emoji: '📄' },
+          { name: 'mcp-registry.ts', emoji: '📄' },
+          { name: 'conversation-store.ts', emoji: '📄' },
+          { name: 'tool-executor.ts', emoji: '📄' },
+        ]
+      },
+      { name: 'vector-service/', emoji: '🔢', description: 'Embedding storage and similarity search. Powers RAG — finding relevant context before sending to Claude.', example: 'POST /vectors/upsert, POST /vectors/search?limit=5',
+        children: [
+          { name: 'index.ts', emoji: '📄' },
+          { name: 'embeddings.ts', emoji: '📄' },
+          { name: 'search.ts', emoji: '📄' },
+        ]
+      },
       { name: 'analytics-service/', emoji: '📈', description: 'AI evaluation metrics, user behavior tracking, hallucination rate monitoring.', example: 'POST /events/track, GET /metrics/accuracy?period=7d' },
       { name: 'gateway-service/', emoji: '🚪', description: 'Single entry point for all external traffic. Rate limits, validates auth, routes to correct service.', example: 'All external traffic → gateway → correct service' },
     ],
@@ -245,11 +326,44 @@ export const archNodes: ArchNode[] = [
       'Orchestrator agent coordinates the full pipeline from goal to deployed feature',
     ],
     subItems: [
-      { name: 'planner-agent/', emoji: '📋', description: 'Receives high-level goals, decomposes into task DAG, assigns to specialist agents.', example: '"Build login system" → [design schema, write service, write tests, update docs, deploy]' },
-      { name: 'executor-agent/', emoji: '⚡', description: 'Receives concrete tasks, executes them: writes code, runs commands, edits files, calls APIs.', example: 'Writes createUser(), hashPassword(), generateJWT() — runs tests after each' },
-      { name: 'retrieval-agent/', emoji: '🔍', description: 'Searches codebases, documentation, vector stores. Answers "what already exists?" before anything is built.', example: 'Finds existing auth patterns before executor reinvents them' },
-      { name: 'monitoring-agent/', emoji: '📊', description: 'Continuously watches system metrics, AI response quality, and agent outputs. Triggers alerts on anomalies.', example: 'Hallucination rate spike → alert team. Error rate spike → auto-rollback trigger.' },
-      { name: 'orchestrator-agent/', emoji: '🎯', description: 'The conductor. Manages work queue, coordinates agent handoffs, ensures task completion end-to-end.', example: 'Ensures planner → retrieval → executor → monitoring pipeline runs to completion' },
+      { name: 'planner-agent/', emoji: '📋', description: 'Receives high-level goals, decomposes into task DAG, assigns to specialist agents.', example: '"Build login system" → [design schema, write service, write tests, update docs, deploy]',
+        children: [
+          { name: 'index.ts', emoji: '📄' },
+          { name: 'prompts.ts', emoji: '📄' },
+          { name: 'task-dag.ts', emoji: '📄' },
+          { name: 'types.ts', emoji: '📄' },
+        ]
+      },
+      { name: 'executor-agent/', emoji: '⚡', description: 'Receives concrete tasks, executes them: writes code, runs commands, edits files, calls APIs.', example: 'Writes createUser(), hashPassword(), generateJWT() — runs tests after each',
+        children: [
+          { name: 'index.ts', emoji: '📄' },
+          { name: 'prompts.ts', emoji: '📄' },
+          { name: 'tools.ts', emoji: '📄' },
+          { name: 'sandbox.ts', emoji: '📄' },
+        ]
+      },
+      { name: 'retrieval-agent/', emoji: '🔍', description: 'Searches codebases, documentation, vector stores. Answers "what already exists?" before anything is built.', example: 'Finds existing auth patterns before executor reinvents them',
+        children: [
+          { name: 'index.ts', emoji: '📄' },
+          { name: 'prompts.ts', emoji: '📄' },
+          { name: 'vector-client.ts', emoji: '📄' },
+          { name: 'codebase-search.ts', emoji: '📄' },
+        ]
+      },
+      { name: 'monitoring-agent/', emoji: '📊', description: 'Continuously watches system metrics, AI response quality, and agent outputs. Triggers alerts on anomalies.', example: 'Hallucination rate spike → alert team. Error rate spike → auto-rollback trigger.',
+        children: [
+          { name: 'index.ts', emoji: '📄' },
+          { name: 'metrics.ts', emoji: '📄' },
+          { name: 'alert-rules.ts', emoji: '📄' },
+        ]
+      },
+      { name: 'orchestrator-agent/', emoji: '🎯', description: 'The conductor. Manages work queue, coordinates agent handoffs, ensures task completion end-to-end.', example: 'Ensures planner → retrieval → executor → monitoring pipeline runs to completion',
+        children: [
+          { name: 'index.ts', emoji: '📄' },
+          { name: 'work-queue.ts', emoji: '📄' },
+          { name: 'handoff.ts', emoji: '📄' },
+        ]
+      },
     ],
     relationships: [
       { targetId: 'mcp', type: 'uses', label: 'uses external tools via' },
@@ -280,10 +394,37 @@ export const archNodes: ArchNode[] = [
       'Internal API connector exposes company knowledge base to Claude agents',
     ],
     subItems: [
-      { name: 'servers/', emoji: '🖥️', description: 'MCP server implementations for each tool. Each server exposes typed tools with JSON schema validation.', example: 'postgres-server.ts, github-server.ts, search-server.ts' },
-      { name: 'transport/', emoji: '📡', description: 'stdio (local subprocess) and HTTP/SSE (remote). Defines the communication channel between Claude and the tool.', example: 'Local: subprocess stdin/stdout. Remote: HTTPS + SSE event stream' },
-      { name: 'auth/', emoji: '🔑', description: 'Credentials and permission scopes for each MCP server. Stored in secrets manager, never in code.', example: 'GitHub OAuth token, Postgres connection DSN, internal service API key' },
-      { name: 'tools/', emoji: '🛠️', description: 'Tool definitions with JSON schema. Describes exactly what each tool does, its parameters, and return types.', example: '{ name: "query_db", description: "Run a SELECT query", inputSchema: { sql: string } }' },
+      { name: 'servers/', emoji: '🖥️', description: 'MCP server implementations for each tool. Each server exposes typed tools with JSON schema validation.', example: 'postgres-server.ts, github-server.ts, search-server.ts',
+        children: [
+          { name: 'postgres-server.ts', emoji: '📄' },
+          { name: 'github-server.ts', emoji: '📄' },
+          { name: 'search-server.ts', emoji: '📄' },
+          { name: 'filesystem-server.ts', emoji: '📄' },
+          { name: 'slack-server.ts', emoji: '📄' },
+        ]
+      },
+      { name: 'transport/', emoji: '📡', description: 'stdio (local subprocess) and HTTP/SSE (remote). Defines the communication channel between Claude and the tool.', example: 'Local: subprocess stdin/stdout. Remote: HTTPS + SSE event stream',
+        children: [
+          { name: 'stdio-transport.ts', emoji: '📄' },
+          { name: 'http-sse-transport.ts', emoji: '📄' },
+          { name: 'connection-pool.ts', emoji: '📄' },
+        ]
+      },
+      { name: 'auth/', emoji: '🔑', description: 'Credentials and permission scopes for each MCP server. Stored in secrets manager, never in code.', example: 'GitHub OAuth token, Postgres connection DSN, internal service API key',
+        children: [
+          { name: 'scopes.ts', emoji: '📄' },
+          { name: 'token-refresh.ts', emoji: '📄' },
+          { name: 'permission-matrix.ts', emoji: '📄' },
+        ]
+      },
+      { name: 'tools/', emoji: '🛠️', description: 'Tool definitions with JSON schema. Describes exactly what each tool does, its parameters, and return types.', example: '{ name: "query_db", description: "Run a SELECT query", inputSchema: { sql: string } }',
+        children: [
+          { name: 'database-tools.ts', emoji: '📄' },
+          { name: 'github-tools.ts', emoji: '📄' },
+          { name: 'search-tools.ts', emoji: '📄' },
+          { name: 'filesystem-tools.ts', emoji: '📄' },
+        ]
+      },
     ],
     relationships: [
       { targetId: 'agents', type: 'calls', label: 'provides tool access to' },
@@ -377,10 +518,37 @@ export const archNodes: ArchNode[] = [
       'Security tests verify MCP tool inputs are properly validated against injection attacks',
     ],
     subItems: [
-      { name: 'unit/', emoji: '🔬', description: 'Fast, isolated tests for individual functions. Run on every commit, must complete in under 60s.' },
-      { name: 'integration/', emoji: '🔗', description: 'Tests that verify services work together correctly. Test real API contracts, not mocks.' },
-      { name: 'ai-evals/', emoji: '🎯', description: 'The most important tests for AI systems. Measure Claude response quality, accuracy, and tool use correctness.', example: 'Does Claude use the right tool? Does it hallucinate facts? Does it follow instructions consistently?' },
-      { name: 'security/', emoji: '🛡️', description: 'Prompt injection tests, permission boundary tests, MCP tool input validation tests.' },
+      { name: 'unit/', emoji: '🔬', description: 'Fast, isolated tests for individual functions. Run on every commit, must complete in under 60s.',
+        children: [
+          { name: 'auth.test.ts', emoji: '📄' },
+          { name: 'ai-orchestrator.test.ts', emoji: '📄' },
+          { name: 'vector-service.test.ts', emoji: '📄' },
+          { name: 'mcp-registry.test.ts', emoji: '📄' },
+        ]
+      },
+      { name: 'integration/', emoji: '🔗', description: 'Tests that verify services work together correctly. Test real API contracts, not mocks.',
+        children: [
+          { name: 'api-contracts.test.ts', emoji: '📄' },
+          { name: 'mcp-tools.test.ts', emoji: '📄' },
+          { name: 'agent-pipeline.test.ts', emoji: '📄' },
+        ]
+      },
+      { name: 'ai-evals/', emoji: '🎯', description: 'The most important tests for AI systems. Measure Claude response quality, accuracy, and tool use correctness.', example: 'Does Claude use the right tool? Does it hallucinate facts? Does it follow instructions consistently?',
+        children: [
+          { name: 'golden-dataset.json', emoji: '📄' },
+          { name: 'eval-runner.ts', emoji: '📄' },
+          { name: 'metrics.ts', emoji: '📄' },
+          { name: 'hallucination-tests.ts', emoji: '📄' },
+          { name: 'tool-use-suite.ts', emoji: '📄' },
+        ]
+      },
+      { name: 'security/', emoji: '🛡️', description: 'Prompt injection tests, permission boundary tests, MCP tool input validation tests.',
+        children: [
+          { name: 'prompt-injection.test.ts', emoji: '📄' },
+          { name: 'permission-bounds.test.ts', emoji: '📄' },
+          { name: 'mcp-validation.test.ts', emoji: '📄' },
+        ]
+      },
     ],
     relationships: [
       { targetId: 'services', type: 'monitors', label: 'validates correctness of' },
@@ -409,7 +577,15 @@ export const archNodes: ArchNode[] = [
       'Scheduled nightly AI evaluation runs track quality trends over time',
     ],
     subItems: [
-      { name: 'workflows/', emoji: '⚡', description: 'GitHub Actions YAML. CI on PR, CD on merge to main, scheduled AI evals nightly.', example: 'ci.yml, deploy-staging.yml, ai-evals-nightly.yml' },
+      { name: 'workflows/', emoji: '⚡', description: 'GitHub Actions YAML. CI on PR, CD on merge to main, scheduled AI evals nightly.', example: 'ci.yml, deploy-staging.yml, ai-evals-nightly.yml',
+        children: [
+          { name: 'ci.yml', emoji: '📄' },
+          { name: 'deploy-staging.yml', emoji: '📄' },
+          { name: 'deploy-prod.yml', emoji: '📄' },
+          { name: 'ai-evals-nightly.yml', emoji: '📄' },
+          { name: 'dependabot.yml', emoji: '📄' },
+        ]
+      },
       { name: 'pull_request_template.md', emoji: '📝', description: 'Standard PR template. Prompts authors for change description, test plan, and AI-specific review notes.' },
       { name: 'CODEOWNERS', emoji: '👥', description: 'Maps directories to responsible teams. Auto-adds the right reviewers for every PR.' },
     ],
