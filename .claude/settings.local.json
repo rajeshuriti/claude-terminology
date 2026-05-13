@@ -11,7 +11,9 @@
       "Bash(git push *)",
       "Bash(npx tsc *)",
       "Bash(dir /s /b src\\\\*.ts src\\\\*.tsx)",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('scripts:', json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\); print\\('deps:', list\\(d.get\\('dependencies',{}\\).keys\\(\\)\\)\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('scripts:', json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\); print\\('deps:', list\\(d.get\\('dependencies',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(xargs wc -l)",
+      "Bash(grep -rn \"initial={{ opacity: 0, y: 8 }}\" \"d:/Development/claude-certification/claude-terminology/learning-platform/src/pages/\")"
     ]
   }
 }

@@ -29,28 +29,23 @@ There are no tests. Use `npx tsc --noEmit` after every change to confirm zero Ty
 ### Path alias
 `@/` resolves to `src/`. Use it for all imports within `src/`.
 
-### Key TypeScript constraint
-`verbatimModuleSyntax` is enabled. Type-only imports **must** use `import type`:
-```ts
-import type { Concept } from '@/types';           // ✅
-import { type Concept } from '@/types';           // ✅
-import { Concept } from '@/types';               // ❌ — compile error
-```
+### TypeScript constraints
+`verbatimModuleSyntax` + `noUnusedLocals` + `noUnusedParameters` are all enforced. See `.claude/rules/typescript.md` for the full error→fix reference table. The short version: use `import type` for types; delete (not rename) unused variables; run `npx tsc --noEmit` to verify.
 
-### Styling constraint
-Tailwind's CSS purging removes dynamically constructed class names. Use **inline styles** for any color that depends on a variable:
-```tsx
-// ❌ purged at build time
-<div className={`bg-${color}-500`} />
+### Dark mode + styling
+All page components read `const { darkMode } = useAppStore()`, alias to `const dm = darkMode`, and pass it as `dm: boolean` to every sub-component. Use the `tw()` utility from `src/lib/dm.ts` instead of inline ternaries where possible. Dynamic colors from variables must use `style={{ color }}` not template-literal class names (Tailwind purges those). Full reference: `.claude/rules/dark-mode.md`.
 
-// ✅ survives build
-<div style={{ background: color }} />
-```
+### Shared UI components (`src/components/ui/`)
+Three reusable primitives — use these instead of repeating the patterns inline:
+- `SectionLabel` — `text-xs font-bold uppercase tracking-wider` headings (30+ uses)
+- `Badge` — `px-2 py-0.5 rounded-full` chips, supports hex color prop (27+ uses)
+- `CollapsibleSection` — animated accordion with ChevronDown/Up (41+ uses)
+
+Import from the barrel: `import { SectionLabel, Badge, CollapsibleSection } from '@/components/ui'`  
+Full API reference: `.claude/rules/components.md`
 
 ### Global state (`src/store/appStore.ts`)
 Single Zustand store with localStorage persistence (`claude-learning-platform` key). Persisted fields: `darkMode`, `learningMode`, `completedConcepts`, `bookmarkedConcepts`, `recentlyViewed`, `quizScores`, `totalQuizAttempts`, `totalCorrect`.
-
-All page components read dark mode as `const { darkMode } = useAppStore()` and pass `dm={darkMode}` to child components via props (not React context).
 
 ### Routing (`src/App.tsx`)
 All routes share the `<Layout>` shell (fixed sidebar + header, scrollable main). To add a route:
