@@ -223,6 +223,38 @@ export const enrichedContent: Record<string, EnrichedContent> = {
     ],
     advancedInsight: 'Temperature is often the last thing engineers optimize when it should be the first. Most teams spend weeks refining prompts while running extraction tasks at temperature=1.0 — introducing entropy that makes their prompt changes impossible to evaluate cleanly. Set temperature first, then refine prompts.',
     simulatorType: 'temperature',
+    primaryAnalogy: {
+      domain: 'Classroom', emoji: '🏫',
+      setting: 'A teacher asks the class to complete: "The capital of France is ___." Temperature controls how much students deviate from the obvious answer.',
+      characters: [
+        { role: 'Student', represents: 'The LLM' },
+        { role: '"Paris" (top answer)', represents: 'Highest-probability token' },
+        { role: 'Lyon, London, cheese…', represents: 'Lower-probability tokens' },
+        { role: 'Temperature dial', represents: 'How much off-script answers are allowed' },
+      ],
+      scenarios: [
+        { mode: 'temperature = 0.0', behavior: 'Every single student writes "Paris." Class is perfectly uniform. No surprises.', consequence: 'Completely deterministic. Use for extraction, evals, regression tests.' },
+        { mode: 'temperature = 0.7', behavior: 'Most write "Paris," a few write "Lyon" or "Marseille." Natural-sounding variation.', consequence: 'Good for chat and Q&A — natural but not erratic. The most common production setting.' },
+        { mode: 'temperature = 1.0', behavior: 'Most write Paris, but someone might write "cheese" or "the moon." The unexpected is possible.', consequence: 'Creative but unreliable. Use for brainstorming only — never for data extraction.' },
+      ],
+      takeaway: 'Temperature is the "how bold" knob. Low = textbook answers only. High = creative surprises, including wrong ones. High temperature is an architecture smell in extraction pipelines.',
+    },
+    enterpriseAnalogy: {
+      domain: 'Copywriting Agency', emoji: '🏢',
+      setting: 'A copywriter is asked to write a product tagline. Temperature controls how much creative risk they are allowed to take.',
+      characters: [
+        { role: 'Copywriter', represents: 'The LLM' },
+        { role: 'Safe tagline', represents: 'High-probability output' },
+        { role: 'Bold/unexpected tagline', represents: 'Low-probability creative output' },
+        { role: 'Brand brief', represents: 'The system prompt constraints' },
+      ],
+      scenarios: [
+        { mode: 'temperature = 0.1', behavior: 'Writer produces the safe, expected tagline: "Quality you can trust."', consequence: 'On-brand, boring, reliable. Use for compliance-heavy, legally-sensitive copy.' },
+        { mode: 'temperature = 0.7', behavior: 'Writer produces varied copy with personality. Some options are stronger than others.', consequence: 'Good balance for marketing. Use when you want personality without going off-brand.' },
+        { mode: 'temperature = 1.0', behavior: 'Writer produces something bold and unexpected — might be brilliant, might be incomprehensible.', consequence: 'High risk, high reward. Fine for brainstorming, never for automated production copy.' },
+      ],
+      takeaway: 'In enterprise: temperature determines the reliability/creativity tradeoff. Production data pipelines always use temperature ≤ 0.2.',
+    },
   },
 
   // ─── top-p ──────────────────────────────────────────────────────────────────
@@ -319,6 +351,37 @@ export const enrichedContent: Record<string, EnrichedContent> = {
     nextConcepts: ['deterministic-generation', 'structured-outputs', 'temperature'],
     advancedInsight: 'In practice, 95% of production Claude deployments configure temperature and leave top_p at default. top_p becomes relevant when working with specialized vocabularies (medical, legal, code) where eliminating long-tail tokens meaningfully improves coherence. For most teams, understanding temperature deeply is more valuable than understanding top_p deeply.',
     simulatorType: 'top-p',
+    primaryAnalogy: {
+      domain: 'Classroom', emoji: '🏫',
+      setting: 'Same classroom as temperature, but a different rule: top-p controls WHICH answers are even allowed into the student\'s answer pool before they pick. Temperature decides HOW the student picks from that pool.',
+      characters: [
+        { role: 'Answer pool on student\'s desk', represents: 'The nucleus — eligible tokens after top-p filtering' },
+        { role: 'top_p value', represents: 'How big the allowed pool is' },
+        { role: 'Temperature', represents: 'How the student picks from the pool' },
+        { role: 'Rare/wild answers', represents: 'Long-tail tokens excluded by low top-p' },
+      ],
+      scenarios: [
+        { mode: 'top_p = 0.1 (tiny pool)', behavior: 'Student can only write from the 1-2 most obvious answers. "Paris" is allowed. "cheese" is not even an option on their desk.', consequence: 'Very restricted vocabulary. Good for technical outputs where only common words should appear.' },
+        { mode: 'top_p = 0.9 (wide pool)', behavior: 'Many plausible answers are on the desk — Paris, Lyon, Marseille, London. Most reasonable options are available, rare ones excluded.', consequence: 'Wide but filtered. Long-tail tokens excluded. The default for most production use.' },
+        { mode: 'top_p = 1.0 (no filtering)', behavior: 'Every possible answer is on the desk, no matter how obscure — including "cheese" and "the moon."', consequence: 'No filtering whatsoever. Only use when maximum diversity is explicitly needed.' },
+      ],
+      takeaway: 'Top-P answers "which tokens are even in the pool?" Temperature answers "how boldly do we pick from that pool?" They control different dimensions. Run them together, not interchangeably.',
+    },
+    enterpriseAnalogy: {
+      domain: 'Hiring Committee', emoji: '🏢',
+      setting: 'A hiring committee uses a two-stage process. Top-P = how wide the candidate shortlist is. Temperature = how the committee makes the final selection from the shortlist.',
+      characters: [
+        { role: 'Shortlisting policy', represents: 'top_p threshold' },
+        { role: 'Candidate shortlist', represents: 'The nucleus of eligible tokens' },
+        { role: 'Selection style', represents: 'Temperature applied to the shortlist' },
+        { role: 'Unqualified candidates', represents: 'Tokens excluded by top_p filtering' },
+      ],
+      scenarios: [
+        { mode: 'top_p = 0.1 (very narrow shortlist)', behavior: 'Only top 1-2 candidates from elite sources considered. Committee chooses from a tiny pool.', consequence: 'Safe, predictable hire. May miss unconventional but excellent candidates.' },
+        { mode: 'top_p = 0.9 (wide shortlist)', behavior: 'Many qualified candidates make the shortlist. Strong and unusual profiles both included.', consequence: 'More options. Some noise, but better odds of finding the right fit.' },
+      ],
+      takeaway: 'Top-P and temperature are both needed. Most teams only tune temperature — top-p is the overlooked dimension that shapes what temperature even gets to choose from.',
+    },
   },
 
   // ─── rag ────────────────────────────────────────────────────────────────────
@@ -457,6 +520,39 @@ export const enrichedContent: Record<string, EnrichedContent> = {
     ],
     advancedInsight: 'The biggest mistake in RAG implementations is focusing on the LLM while neglecting the retrieval pipeline. A mediocre LLM with excellent retrieval beats an excellent LLM with mediocre retrieval every time. Most RAG failures in production are retrieval failures, not generation failures — but teams spend 80% of their optimization effort on prompts.',
     simulatorType: 'rag-pipeline',
+    primaryAnalogy: {
+      domain: 'Library Research', emoji: '📚',
+      setting: 'Before writing an essay, the student must first go to the library, find the 5 most relevant books, and bring them to the desk. Only then can the essay begin. Without this step — writing from memory alone — the student invents facts.',
+      characters: [
+        { role: 'Student', represents: 'The LLM' },
+        { role: 'Library', represents: 'The vector database + document corpus' },
+        { role: '5 retrieved books', represents: 'The top-k retrieved chunks' },
+        { role: 'Essay', represents: 'The final AI response' },
+        { role: 'Librarian', represents: 'The retrieval system + embeddings' },
+      ],
+      scenarios: [
+        { mode: 'Without RAG', behavior: 'Student writes essay from memory alone. Sounds authoritative. Half the citations are made up.', consequence: 'Hallucination. Confident, fluent, wrong. Undetectable without fact-checking.' },
+        { mode: 'With RAG (good retrieval)', behavior: 'Student retrieves 5 genuinely relevant books. Essay is grounded in retrieved material. Citations are real.', consequence: 'Accurate, grounded, citable. The retrieval quality determines the answer quality.' },
+        { mode: 'With RAG (bad retrieval)', behavior: 'Student retrieves 5 books on the wrong topic — similar-sounding but irrelevant. Writes essay from these wrong sources.', consequence: 'Grounded but wrong. The LLM faithfully uses wrong context. Retrieval failure, not generation failure.' },
+      ],
+      takeaway: 'RAG doesn\'t guarantee accuracy — it grounds accuracy in the retrieval quality. A bad librarian (poor retrieval) produces confidently wrong essays even with an excellent student.',
+    },
+    enterpriseAnalogy: {
+      domain: 'Consulting Firm', emoji: '🏢',
+      setting: 'Before drafting any client deliverable, the consultant must first search the firm\'s knowledge base and retrieve the 5 most relevant precedent case studies. Only then does drafting begin.',
+      characters: [
+        { role: 'Consultant', represents: 'The LLM' },
+        { role: 'Knowledge base search', represents: 'Vector similarity retrieval' },
+        { role: '5 retrieved case studies', represents: 'Retrieved context chunks' },
+        { role: 'Client deliverable', represents: 'The AI response' },
+        { role: 'Knowledge base curator', represents: 'The document ingestion + chunking pipeline' },
+      ],
+      scenarios: [
+        { mode: 'No knowledge base (no RAG)', behavior: 'Consultant drafts from experience alone. Produces generic recommendations not tailored to client.', consequence: 'Low-quality output. Misses firm-specific expertise and client-relevant precedents.' },
+        { mode: 'Strong knowledge base + good retrieval', behavior: 'Consultant retrieves 5 genuinely relevant past engagements. Deliverable references real precedents.', consequence: 'High-quality, grounded deliverable. Client gets the firm\'s actual expertise, not generic advice.' },
+      ],
+      takeaway: 'RAG quality = knowledge base quality × retrieval precision. Both matter equally. Teams that build great LLM prompts but neglect the retrieval pipeline are optimizing the wrong thing.',
+    },
   },
 
   // ─── context-window ──────────────────────────────────────────────────────────
@@ -557,6 +653,37 @@ export const enrichedContent: Record<string, EnrichedContent> = {
     ],
     advancedInsight: '"Bigger context window" is the most overused solution proposal in AI system design. In practice, a well-designed RAG system with 10k context outperforms a naive 200k-context system for enterprise knowledge retrieval because the RAG system surfaces only the relevant 2% of your document corpus.',
     simulatorType: 'context-window',
+    primaryAnalogy: {
+      domain: 'Student\'s Desk', emoji: '🏫',
+      setting: 'A student\'s desk can only hold 200 pages of notes at once. The exam has 2,000 pages of course material. The student must choose which 200 pages to keep on the desk — everything else is out of sight, out of mind, even if the answer is in those other 1,800 pages.',
+      characters: [
+        { role: 'Desk surface', represents: 'The context window (200k tokens max)' },
+        { role: 'Pages on desk', represents: 'Active context — what the model can "see"' },
+        { role: 'Pages in backpack', represents: 'Information not in context — invisible to model' },
+        { role: 'Desk size', represents: 'The context window limit' },
+      ],
+      scenarios: [
+        { mode: 'Small desk (4k tokens)', behavior: 'Student can only keep 4 pages. Must constantly swap pages in/out. Loses earlier context quickly.', consequence: 'Frequent context loss. Only suitable for short, focused conversations.' },
+        { mode: 'Large desk (200k tokens)', behavior: 'Student can keep 200 pages on the desk. Rarely needs to swap. Very long conversations fit.', consequence: 'More context available, but student still reads bottom of desk less carefully than top (lost-in-the-middle effect).' },
+        { mode: 'Desk overflow', behavior: 'Student tries to put 201 pages on a 200-page desk. First page falls off the desk — gone forever.', consequence: 'Early context (system prompt, instructions) may be overwritten. Loss of critical information.' },
+      ],
+      takeaway: 'Bigger desk ≠ perfect memory. Students still read the top of the desk more carefully than the middle. Information buried in the middle of a long context is read less reliably than information at the start or end.',
+    },
+    enterpriseAnalogy: {
+      domain: 'Conference Room Whiteboard', emoji: '🏢',
+      setting: 'A team\'s project whiteboard holds all current work: diagrams, decisions, notes. Once it\'s full, old content must be erased to write new content. The question is always: what do you erase?',
+      characters: [
+        { role: 'Whiteboard', represents: 'The context window' },
+        { role: 'Written diagrams/notes', represents: 'The active context tokens' },
+        { role: 'Erased content', represents: 'Context that falls off due to window limit' },
+        { role: 'Whiteboard size', represents: 'The max_tokens parameter' },
+      ],
+      scenarios: [
+        { mode: 'No space management', behavior: 'Team keeps writing until whiteboard is full, then starts erasing old decisions arbitrarily.', consequence: 'Critical decisions from early in the meeting are lost. Team re-makes decisions they already agreed on.' },
+        { mode: 'Proactive context management', behavior: 'Team periodically summarizes old notes into a compact "decisions made" block, freeing space for new work.', consequence: 'Key decisions preserved in compact form. More space for ongoing work.' },
+      ],
+      takeaway: 'Context window management is an active engineering concern — not a passive capability. Blindly filling the context without pruning causes gradual quality degradation.',
+    },
   },
 
   // ─── chunking ───────────────────────────────────────────────────────────────
@@ -632,6 +759,37 @@ export const enrichedContent: Record<string, EnrichedContent> = {
     nextConcepts: ['semantic-search', 'hybrid-retrieval', 'reranking', 'context-injection'],
     advancedInsight: 'The golden rule: chunk at semantic boundaries, not at byte or token boundaries. The semantic unit for a contract clause is the clause itself. The semantic unit for a FAQ is the question-answer pair. Chunking at character positions is almost always wrong for structured documents.',
     simulatorType: 'chunking',
+    primaryAnalogy: {
+      domain: 'Library Card Catalog', emoji: '📚',
+      setting: 'A library decides to cut all its books into sections and catalog each section separately for retrieval. WHERE you cut determines whether each retrieved section is useful or confusing.',
+      characters: [
+        { role: 'Book', represents: 'The source document' },
+        { role: 'Cut sections', represents: 'Individual chunks' },
+        { role: 'Cut position', represents: 'The chunk boundary' },
+        { role: 'Catalog card', represents: 'The embedding vector for each chunk' },
+      ],
+      scenarios: [
+        { mode: 'Cut at chapter ends (semantic boundary)', behavior: 'Each section is a complete, self-contained thought. Catalog card accurately describes the section content.', consequence: 'High retrieval precision. Retrieved section is always meaningful and usable.' },
+        { mode: 'Cut at 500-character intervals (arbitrary boundary)', behavior: 'Section often ends mid-sentence. One section has the first half of a clause, next has the second half.', consequence: 'Poor retrieval. Neither chunk fully captures the meaning. Embedding is confusing. RAG quality degrades.' },
+        { mode: 'Cut with overlap (sliding window)', behavior: 'Each section shares some content with the next. A key sentence appears in two adjacent sections.', consequence: 'Important boundary content is captured in at least one section. Retrieval improves for edge content.' },
+      ],
+      takeaway: 'The cut point changes everything. Chunking at semantic boundaries (paragraph, clause, Q&A pair) dramatically outperforms chunking at arbitrary character counts for structured documents.',
+    },
+    enterpriseAnalogy: {
+      domain: 'Legal Document Filing', emoji: '⚖️',
+      setting: 'A law firm digitizes 10,000 contracts for retrieval. They must decide how to break each contract into retrievable units.',
+      characters: [
+        { role: 'Contract clauses', represents: 'Natural semantic chunks' },
+        { role: 'Character-based splits', represents: 'Arbitrary chunking' },
+        { role: 'Overlap between chunks', represents: 'Sliding window overlap parameter' },
+        { role: 'Clause-level chunks', represents: 'Semantic chunking' },
+      ],
+      scenarios: [
+        { mode: 'Chunk by clause (semantic)', behavior: 'Each chunk = one contract clause. Indemnification clause is always retrieved complete.', consequence: 'Lawyer searches for "indemnification" and gets the full, complete clause. Analysis is correct.' },
+        { mode: 'Chunk by 500 chars (arbitrary)', behavior: 'A 700-character indemnification clause is split across two chunks. Neither chunk is complete.', consequence: 'Lawyer retrieves one chunk — sees the beginning of the clause but not the key limitation in the second half. Analysis is wrong.' },
+      ],
+      takeaway: 'Chunking strategy is a legal/compliance decision, not just a technical one. Wrong chunk boundaries produce incomplete evidence retrieval.',
+    },
   },
 
   // ─── tool-use ──────────────────────────────────────────────────────────────
@@ -719,6 +877,38 @@ export const enrichedContent: Record<string, EnrichedContent> = {
     prerequisites: ['agent', 'function-calling', 'tool-schema'],
     nextConcepts: ['tool-choice', 'mcp', 'tool-annotations', 'structured-outputs', 'orchestration'],
     advancedInsight: 'Tool reliability is consistently harder than engineers expect. The tool definitions, argument validation, error handling, result formatting, and context management together represent more engineering complexity than the LLM integration itself. Plan for 3–5x the development time you estimate for "adding tools."',
+    primaryAnalogy: {
+      domain: 'School with Specialist Departments', emoji: '🏫',
+      setting: 'A Principal (the LLM) answers all student questions. Without tools: the principal answers from memory only — making arithmetic mistakes, not knowing today\'s news, unable to run experiments. With tools: the principal calls specialist departments for specific queries.',
+      characters: [
+        { role: 'Principal', represents: 'The LLM / Claude' },
+        { role: 'Math Teacher', represents: 'Calculator tool' },
+        { role: 'Librarian', represents: 'Web search / retrieval tool' },
+        { role: 'Computer Lab', represents: 'Code execution tool' },
+        { role: 'Tools policy', represents: 'The tool definitions + tool_choice' },
+      ],
+      scenarios: [
+        { mode: 'No tools', behavior: 'Student asks: "What\'s 1,247 × 893?" Principal multiplies in their head. Gets it wrong. Confidently states wrong answer.', consequence: 'Arithmetic errors, stale data, no external capability. LLM is limited to its training data.' },
+        { mode: 'With calculator tool', behavior: 'Principal routes math query to Math Teacher. Math Teacher returns exact answer. Principal relays it accurately.', consequence: 'Perfect arithmetic. No hallucinated numbers. Tools compensate for the model\'s mathematical weakness.' },
+        { mode: 'Tool fails silently', behavior: 'Calculator tool returns an error. Principal doesn\'t notice and answers from memory anyway.', consequence: 'Hallucinated answer delivered with same confidence as the correct one. Requires error handling to detect.' },
+      ],
+      takeaway: 'Tools extend what the LLM can do — but only if they are well-defined, properly invoked, and their errors are explicitly handled. A tool that fails silently is worse than no tool.',
+    },
+    enterpriseAnalogy: {
+      domain: 'Generalist vs. Specialist Firm', emoji: '🏢',
+      setting: 'A managing director (the LLM) handles all client questions. Without departments: answers everything from experience alone. With departments: routes to tax, legal, and engineering specialists.',
+      characters: [
+        { role: 'Managing Director', represents: 'The LLM' },
+        { role: 'Tax Department', represents: 'Financial calculation tool' },
+        { role: 'Legal Department', represents: 'Contract lookup tool' },
+        { role: 'Engineering', represents: 'Code execution / technical analysis tool' },
+      ],
+      scenarios: [
+        { mode: 'Generalist only (no tools)', behavior: 'MD answers tax question from memory. Gives plausible but outdated tax advice.', consequence: 'Wrong guidance. Client makes bad decision. No one knew the answer was wrong because it sounded authoritative.' },
+        { mode: 'With specialist departments', behavior: 'MD routes tax question to Tax Department. Gets current, accurate answer. Relays with attribution.', consequence: 'Correct, current, defensible answer. The MD\'s value is routing and synthesis, not knowing everything.' },
+      ],
+      takeaway: 'Tool use transforms the LLM from a generalist who knows a lot to a coordinator who can access specialized, real-time expertise. The LLM\'s job shifts from knowing to routing and synthesizing.',
+    },
   },
 
   // ─── hallucination ──────────────────────────────────────────────────────────
@@ -806,6 +996,37 @@ export const enrichedContent: Record<string, EnrichedContent> = {
     prerequisites: ['temperature', 'rag', 'calibration'],
     nextConcepts: ['evals', 'rag', 'citation', 'confidence-scoring', 'guardrails'],
     advancedInsight: 'The single most important architectural truth about hallucination: language models are not lookup systems — they are generation systems. Expecting zero hallucination from a generation system is like expecting a human expert to never misremember. Design for managed error rates, not zero error rates.',
+    primaryAnalogy: {
+      domain: 'Exam Without Studying', emoji: '🏫',
+      setting: 'A student takes an exam on a topic they haven\'t studied. Rather than leaving blanks, they write confident, fluent, plausible-sounding answers — composed from related things they do know. The teacher initially believes the answers because they sound authoritative.',
+      characters: [
+        { role: 'Unprepared student', represents: 'The LLM on an unfamiliar topic' },
+        { role: 'Confident fluency', represents: 'The statistical pattern-matching that sounds authoritative' },
+        { role: 'Plausible-sounding wrong answer', represents: 'A hallucinated response' },
+        { role: 'The teacher initially believing it', represents: 'The dangerous part — hallucinations are hard to detect' },
+      ],
+      scenarios: [
+        { mode: 'Student knew the topic (no hallucination)', behavior: 'Student studied this chapter. Writes accurate, specific answer with real citations.', consequence: 'Correct, grounded, verifiable. Model is operating in its training data distribution.' },
+        { mode: 'Student didn\'t study (hallucination)', behavior: 'Student didn\'t study this. Writes a confident essay with a famous researcher\'s name and a 2019 paper title — both invented.', consequence: 'Sounds authoritative. Is completely fabricated. The confidence is the danger — it prevents verification.' },
+        { mode: 'Student knew they didn\'t know (calibrated)', behavior: 'Student writes: "I\'m not certain, but based on related concepts, I believe..." and flags uncertainty.', consequence: 'Calibrated uncertainty. The answer may still be wrong but the reader knows to verify it.' },
+      ],
+      takeaway: 'Hallucination is not dishonesty — it\'s a fundamental property of generation systems. The model generates the most statistically plausible continuation, not the most factually accurate one. Build systems that verify, not just generate.',
+    },
+    enterpriseAnalogy: {
+      domain: 'New Employee Without Training', emoji: '🏢',
+      setting: 'A new hire is asked for a key business metric they don\'t have access to. Rather than admitting they don\'t know, they state a confident-sounding number. The meeting moves on, the wrong number gets into the quarterly report.',
+      characters: [
+        { role: 'New hire', represents: 'The LLM' },
+        { role: 'Confident wrong number', represents: 'The hallucinated output' },
+        { role: '"I don\'t have that data"', represents: 'The correct refusal response' },
+        { role: 'Quarterly report', represents: 'The downstream system that trusts the output' },
+      ],
+      scenarios: [
+        { mode: 'No guardrails (hallucination accepted)', behavior: 'New hire says "$42M" without verification. Number goes into report. Board makes decisions on wrong data.', consequence: 'Silent downstream damage. Wrong data used for months before discovered. Trust destroyed.' },
+        { mode: 'With verification gate', behavior: 'CFO requires all reported numbers to be sourced from the ERP system, not stated from memory.', consequence: 'New hire\'s guess is never accepted. Only verified data enters the report. Hallucination is structurally prevented.' },
+      ],
+      takeaway: 'Hallucination prevention is a system design problem, not a prompting problem. Structural verification (retrieval, tool calls, schema validation, human review) is more reliable than instructing the model to "be honest."',
+    },
   },
 
   // ─── evals ──────────────────────────────────────────────────────────────────
@@ -887,6 +1108,37 @@ export const enrichedContent: Record<string, EnrichedContent> = {
     prerequisites: ['first-pass-success', 'calibration'],
     nextConcepts: ['calibration', 'regression-testing', 'hallucination', 'confidence-scoring'],
     advancedInsight: 'The teams that build production AI systems the fastest are not the ones that skip evals to move quickly — they\'re the teams that invest in evals early and iterate with confidence. Every AI system without evals is one deployment away from a production incident.',
+    primaryAnalogy: {
+      domain: 'School Grading System', emoji: '🏫',
+      setting: 'A teacher grades 100 student essays on the same prompt. Without a rubric: scoring is inconsistent — what earns an A on Monday earns a B on Wednesday. With a rubric (evals): every essay is scored consistently, improvement is measurable, and regression is visible.',
+      characters: [
+        { role: 'Teacher with rubric', represents: 'The eval system' },
+        { role: 'Grading rubric', represents: 'The eval criteria and test cases' },
+        { role: 'Student essays over time', represents: 'Model outputs across different versions/prompts' },
+        { role: 'Grade regression', represents: 'AI system degradation after a change' },
+      ],
+      scenarios: [
+        { mode: 'No rubric (no evals)', behavior: 'Teacher grades by feel. Student improves their introduction but the teacher accidentally grades their conclusion worse. Net grade goes down despite real improvement.', consequence: 'Undetectable regressions. Changes that improve one dimension silently break another.' },
+        { mode: 'With rubric (with evals)', behavior: 'Rubric grades: argument (40%), evidence (30%), clarity (30%). Student improved argument (+5), evidence stable, clarity dropped (-3). Net: +2.', consequence: 'Improvement is measurable, regression is detected. Team knows which dimension to fix.' },
+        { mode: 'Rubric without diverse examples', behavior: 'Rubric only tests essay writing. Student\'s research skills degrade — but the rubric doesn\'t measure it.', consequence: 'Benchmark contamination risk. What you don\'t measure, you can\'t protect. Evals must cover the full use case distribution.' },
+      ],
+      takeaway: 'Evals are the measurement system. Without them, you can\'t tell if you\'re improving or regressing. Every prompt change, model update, and feature addition requires evals to verify impact.',
+    },
+    enterpriseAnalogy: {
+      domain: 'Software QA Pipeline', emoji: '💻',
+      setting: 'A software team ships features. Without tests: bugs only discovered when customers report them. With a test suite: regressions caught in CI before reaching production.',
+      characters: [
+        { role: 'Test suite', represents: 'The eval system' },
+        { role: 'Individual test cases', represents: 'Eval examples with ground truth' },
+        { role: 'CI pipeline', represents: 'Automated eval run on each change' },
+        { role: 'Test coverage', represents: 'How much of the use case distribution is tested' },
+      ],
+      scenarios: [
+        { mode: 'No tests (no evals)', behavior: 'Developer changes authentication logic. Breaks the password reset flow. Discovered by a customer 3 weeks later.', consequence: 'Production incident. Customer trust damage. 40 hours of emergency debugging.' },
+        { mode: 'With comprehensive tests', behavior: 'Same change. CI pipeline fails on password reset test case. Developer sees the failure before merge.', consequence: 'Bug caught in 5 minutes. Never reaches production. No customer impact.' },
+      ],
+      takeaway: 'AI evals are exactly like software tests — they are the difference between "I think it works" and "I know it works." The investment cost is the same. The production incident cost is not.',
+    },
   },
 
   // ─── orchestration ──────────────────────────────────────────────────────────
@@ -968,6 +1220,38 @@ export const enrichedContent: Record<string, EnrichedContent> = {
     prerequisites: ['agent', 'tool-use', 'multi-agent-systems'],
     nextConcepts: ['planner-agent', 'executor-agent', 'synthesis-subagent', 'observability', 'orchestration-layers'],
     advancedInsight: 'The single most important truth in AI systems engineering: orchestration is harder than prompting. Teams that spend 80% of their time on prompt engineering while neglecting orchestration architecture are building on sand. A mediocre prompt with excellent orchestration outperforms an excellent prompt with mediocre orchestration.',
+    primaryAnalogy: {
+      domain: 'School Project Coordinator', emoji: '🏫',
+      setting: 'A complex class project requires: research (History team), analysis (Math team), writing (English team), and design (Art team). Without a coordinator: teams work in isolation and produce disconnected pieces. With a coordinator: tasks are assigned, handoffs are managed, and a coherent final project emerges.',
+      characters: [
+        { role: 'Project Coordinator', represents: 'The orchestrator (the coordinating LLM or application code)' },
+        { role: 'History, Math, English, Art teams', represents: 'Specialist agents or tools' },
+        { role: 'Task assignment', represents: 'Orchestration decisions' },
+        { role: 'Handoff between teams', represents: 'Structured inter-agent context passing' },
+        { role: 'Final project', represents: 'The synthesized output' },
+      ],
+      scenarios: [
+        { mode: 'No orchestration', behavior: 'Each team works independently. History writes about politics. Math analyzes economics. English writes about culture. Art designs something unrelated. No one coordinates.', consequence: 'Four separate, high-quality, disconnected pieces. The "final project" is incoherent. Individual quality ≠ system quality.' },
+        { mode: 'With orchestration', behavior: 'Coordinator: assigns research to History (week 1), passes findings to Math for analysis (week 2), passes both to English for synthesis (week 3), passes draft to Art for design (week 4).', consequence: 'Sequential dependencies managed. Outputs feed into each other. Final project is coherent and integrated.' },
+        { mode: 'Bad handoff (context bleed)', behavior: 'History team passes 50 pages of notes to English team, including their discarded hypotheses and wrong intermediate conclusions.', consequence: 'English team incorporates wrong conclusions from History\'s scratch work. Final project contains errors that weren\'t in anyone\'s final answer.' },
+      ],
+      takeaway: 'Orchestration is the glue that turns individual agent outputs into a coherent system result. The quality of handoffs between agents matters as much as the quality of each individual agent.',
+    },
+    enterpriseAnalogy: {
+      domain: 'Program Management Office', emoji: '🏢',
+      setting: 'A complex client engagement requires: market research (Research practice), financial modeling (Finance practice), technical assessment (Engineering practice), and synthesis (Engagement manager). The PMO coordinates all workstreams.',
+      characters: [
+        { role: 'Engagement Manager (PMO)', represents: 'The orchestrator' },
+        { role: 'Research, Finance, Engineering practices', represents: 'Specialist agents' },
+        { role: 'Workstream dependencies', represents: 'Sequential orchestration steps' },
+        { role: 'Executive summary', represents: 'Synthesized final output' },
+      ],
+      scenarios: [
+        { mode: 'No orchestration (siloed)', behavior: 'Each practice delivers independently. Research delivers market data. Finance models without the market context. Engineering assesses without financial constraints.', consequence: 'Three excellent but disconnected deliverables. Client must integrate them manually. Consulting firm looks uncoordinated.' },
+        { mode: 'With orchestration', behavior: 'PMO: Research delivers market data (week 1) → Finance builds model using that data (week 2) → Engineering proposes solution within financial constraints (week 3) → PMO synthesizes into integrated recommendation (week 4).', consequence: 'Integrated, coherent deliverable. Each practice\'s output directly informs the next. Client receives one coordinated recommendation.' },
+      ],
+      takeaway: 'Orchestration complexity grows super-linearly with agent count. Two agents with bad handoffs are harder to debug than one well-designed agent. Plan handoff schemas before writing a single agent prompt.',
+    },
   },
 
 

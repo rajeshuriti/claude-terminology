@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeftRight, ChevronDown, Search, ArrowRight, ChevronUp } from 'lucide-react';
+import { ArrowLeftRight, ChevronDown, Search, ChevronUp } from 'lucide-react';
 import { comparisons } from '@/data/comparisons';
 import { concepts, conceptMap } from '@/data/concepts';
 import { categoryMap } from '@/data/categories';
@@ -20,58 +20,6 @@ function MiniModeTable({ modes, dm }: { modes: ModeEntry[]; dm: boolean }) {
           <div className={`px-3 py-2 leading-relaxed ${dm ? 'text-slate-300' : 'text-slate-600'}`}>{m.meaning}</div>
         </div>
       ))}
-    </div>
-  );
-}
-
-// ─── Mini Analogy Card ────────────────────────────────────────────────────────
-
-function MiniAnalogyCard({ analogy, dm }: { analogy: RichAnalogy; dm: boolean }) {
-  const [openIdx, setOpenIdx] = useState(0);
-
-  return (
-    <div className={`rounded-xl border overflow-hidden ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-      <div className={`px-4 py-3 border-b flex items-center gap-2 ${dm ? 'border-slate-700 bg-slate-900/60' : 'border-slate-100 bg-slate-50'}`}>
-        <span className="text-xl">{analogy.emoji}</span>
-        <span className={`text-xs font-bold ${dm ? 'text-white' : 'text-slate-900'}`}>{analogy.domain}</span>
-      </div>
-      <div className={`px-4 py-2.5 border-b text-xs leading-relaxed ${dm ? 'border-slate-700 text-slate-400' : 'border-slate-100 text-slate-500'}`}>
-        {analogy.setting}
-      </div>
-      {/* Character mapping condensed */}
-      <div className={`px-4 py-2 border-b ${dm ? 'border-slate-700' : 'border-slate-100'}`}>
-        {analogy.characters.slice(0, 3).map((c, i) => (
-          <div key={i} className="flex items-center gap-1.5 text-xs py-0.5">
-            <span className={`font-semibold shrink-0 ${dm ? 'text-sky-400' : 'text-sky-600'}`}>{c.role}</span>
-            <ArrowRight size={10} className={dm ? 'text-slate-600' : 'text-slate-300'} />
-            <span className={dm ? 'text-slate-400' : 'text-slate-500'}>{c.represents}</span>
-          </div>
-        ))}
-      </div>
-      {/* Scenarios as tabs */}
-      <div className="divide-y" style={{ borderColor: dm ? '#334155' : '#f1f5f9' }}>
-        {analogy.scenarios.slice(0, 3).map((s, i) => (
-          <div key={i}>
-            <button onClick={() => setOpenIdx(i === openIdx ? -1 : i)}
-              className={`w-full flex items-center gap-2 px-4 py-2.5 text-left text-xs ${dm ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50'}`}>
-              <span className={`font-semibold shrink-0 w-4 text-center rounded ${dm ? 'text-sky-300' : 'text-sky-600'}`}>{i + 1}</span>
-              <span className={`flex-1 font-medium truncate ${dm ? 'text-white' : 'text-slate-800'}`}>{s.mode}</span>
-              {i === openIdx ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            </button>
-            {i === openIdx && (
-              <div className={`px-4 pb-3 space-y-2`}>
-                <p className={`text-xs leading-relaxed ${dm ? 'text-slate-300' : 'text-slate-600'}`}>{s.behavior}</p>
-                <p className={`text-xs rounded-lg p-2 ${dm ? 'bg-slate-700 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
-                  <span className="font-semibold">→ </span>{s.consequence}
-                </p>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-      <div className={`px-4 py-2.5 border-t text-xs ${dm ? 'border-slate-700 text-amber-300 bg-slate-900/40' : 'border-slate-100 text-amber-700 bg-amber-50/50'}`}>
-        <span className="font-semibold">Key: </span>{analogy.takeaway}
-      </div>
     </div>
   );
 }
@@ -151,6 +99,214 @@ function ConceptPicker({
   );
 }
 
+// ─── Analogy Contrast ────────────────────────────────────────────────────────
+
+function ScenarioCard({ mode, behavior, consequence, color, dm }: {
+  mode: string; behavior: string; consequence: string; color: string; dm: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const isBad = consequence.toLowerCase().includes('wrong') || consequence.toLowerCase().includes('fail')
+    || consequence.toLowerCase().includes('break') || consequence.toLowerCase().includes('error')
+    || consequence.toLowerCase().includes('hallucin') || consequence.toLowerCase().includes('damage');
+
+  return (
+    <div className={`rounded-xl border overflow-hidden ${dm ? 'bg-slate-800/80 border-slate-600' : 'bg-white border-slate-200'}`}>
+      <button onClick={() => setOpen(!open)}
+        className={`w-full flex items-start gap-2.5 p-3 text-left ${dm ? 'hover:bg-slate-700/40' : 'hover:bg-slate-50'}`}>
+        <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg shrink-0 mt-0.5"
+          style={{ backgroundColor: `${color}20`, color }}>
+          {mode}
+        </span>
+        <span className={`text-xs leading-relaxed flex-1 ${dm ? 'text-slate-200' : 'text-slate-700'}`}>
+          {behavior}
+        </span>
+        {open ? <ChevronUp size={12} className="shrink-0 mt-1" /> : <ChevronDown size={12} className="shrink-0 mt-1" />}
+      </button>
+      {open && (
+        <div className={`px-3 pb-3 text-xs leading-relaxed rounded-b-xl ${
+          isBad
+            ? dm ? 'text-rose-200 bg-rose-900/10' : 'text-rose-700 bg-rose-50'
+            : dm ? 'text-emerald-200 bg-emerald-900/10' : 'text-emerald-700 bg-emerald-50'
+        }`}>
+          <span className="font-semibold">{isBad ? '⚠ Consequence: ' : '✓ Consequence: '}</span>
+          {consequence}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SharedDomainContrast({ aA, aB, termA, termB, dm }: {
+  aA: RichAnalogy; aB: RichAnalogy; termA: string; termB: string; dm: boolean;
+}) {
+  return (
+    <div className={`rounded-2xl border overflow-hidden ${dm ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+      {/* Header */}
+      <div className={`px-5 py-4 border-b ${dm ? 'border-slate-700 bg-gradient-to-r from-sky-900/20 to-violet-900/20' : 'border-slate-200 bg-gradient-to-r from-sky-50 to-violet-50'}`}>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-2xl">{aA.emoji}</span>
+          <span className={`text-sm font-bold ${dm ? 'text-white' : 'text-slate-900'}`}>
+            Same World, Different Controls — {aA.domain}
+          </span>
+        </div>
+        <p className={`text-xs leading-relaxed ${dm ? 'text-slate-400' : 'text-slate-500'}`}>
+          {aA.setting}
+        </p>
+      </div>
+
+      {/* Character mapping row */}
+      <div className={`grid grid-cols-2 divide-x border-b text-xs ${dm ? 'divide-slate-700 border-slate-700' : 'divide-slate-200 border-slate-200'}`}>
+        {[{ term: termA, analogy: aA, color: '#0ea5e9' }, { term: termB, analogy: aB, color: '#8b5cf6' }].map(({ term, analogy, color }) => (
+          <div key={term} className="p-4">
+            <div className="font-bold mb-2" style={{ color }}>{term}</div>
+            <div className="space-y-1">
+              {analogy.characters.slice(0, 3).map((c, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <span className="font-semibold text-xs" style={{ color }}>{c.role}</span>
+                  <span className={`text-xs ${dm ? 'text-slate-500' : 'text-slate-400'}`}>→</span>
+                  <span className={`text-xs ${dm ? 'text-slate-400' : 'text-slate-500'}`}>{c.represents}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Scenarios side by side */}
+      <div className={`grid grid-cols-2 divide-x border-b ${dm ? 'divide-slate-700 border-slate-700' : 'divide-slate-200 border-slate-200'}`}>
+        {[{ term: termA, analogy: aA, color: '#0ea5e9' }, { term: termB, analogy: aB, color: '#8b5cf6' }].map(({ term, analogy, color }) => (
+          <div key={term} className="p-4 space-y-2">
+            <div className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color }}>
+              How {term} behaves
+            </div>
+            {analogy.scenarios.slice(0, 3).map((s, i) => (
+              <ScenarioCard key={i} mode={s.mode} behavior={s.behavior} consequence={s.consequence} color={color} dm={dm} />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Key difference banner */}
+      <div className={`px-5 py-4 ${dm ? 'bg-amber-900/15 border-t border-amber-700/30' : 'bg-amber-50 border-t border-amber-200'}`}>
+        <div className={`text-xs font-bold uppercase tracking-wide mb-2 ${dm ? 'text-amber-400' : 'text-amber-600'}`}>
+          Key Difference
+        </div>
+        <div className={`grid grid-cols-2 gap-4 text-xs ${dm ? 'text-amber-100' : 'text-amber-900'}`}>
+          <div><span className="font-semibold text-sky-400 dark:text-sky-400">{termA}: </span>{aA.takeaway}</div>
+          <div><span className="font-semibold" style={{ color: '#8b5cf6' }}>{termB}: </span>{aB.takeaway}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SeparateDomainContrast({ aA, aB, eA, eB, termA, termB, dm }: {
+  aA?: RichAnalogy; aB?: RichAnalogy;
+  eA?: RichAnalogy; eB?: RichAnalogy;
+  termA: string; termB: string; dm: boolean;
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Everyday analogies side by side */}
+      {(aA || aB) && (
+        <div className={`grid grid-cols-2 divide-x rounded-2xl border overflow-hidden ${dm ? 'border-slate-700 divide-slate-700' : 'border-slate-200 divide-slate-200'}`}>
+          {[{ term: termA, analogy: aA, color: '#0ea5e9' }, { term: termB, analogy: aB, color: '#8b5cf6' }].map(({ term, analogy, color }) => (
+            <div key={term} className={dm ? 'bg-slate-800' : 'bg-white'}>
+              {analogy ? (
+                <>
+                  <div className={`px-4 py-3 border-b flex items-center gap-2 ${dm ? 'border-slate-700 bg-slate-900/50' : 'border-slate-100 bg-slate-50'}`}>
+                    <span className="text-xl">{analogy.emoji}</span>
+                    <div>
+                      <div className="text-xs font-bold" style={{ color }}>{term}</div>
+                      <div className={`text-xs ${dm ? 'text-slate-400' : 'text-slate-500'}`}>{analogy.domain}</div>
+                    </div>
+                  </div>
+                  <div className={`px-4 py-3 border-b text-xs leading-relaxed ${dm ? 'border-slate-700 text-slate-400' : 'border-slate-100 text-slate-500'}`}>
+                    {analogy.setting}
+                  </div>
+                  <div className="p-4 space-y-2">
+                    {analogy.scenarios.slice(0, 3).map((s, i) => (
+                      <ScenarioCard key={i} mode={s.mode} behavior={s.behavior} consequence={s.consequence} color={color} dm={dm} />
+                    ))}
+                  </div>
+                  <div className={`px-4 py-3 border-t text-xs ${dm ? 'border-slate-700 text-amber-300 bg-slate-900/30' : 'border-slate-100 text-amber-700 bg-amber-50/50'}`}>
+                    <span className="font-semibold">Key: </span>{analogy.takeaway}
+                  </div>
+                </>
+              ) : (
+                <div className={`p-6 text-center text-xs ${dm ? 'text-slate-500' : 'text-slate-400'}`}>
+                  No analogy available for {term}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Enterprise analogies side by side */}
+      {(eA || eB) && (
+        <div className={`grid grid-cols-2 divide-x rounded-2xl border overflow-hidden ${dm ? 'border-slate-700 divide-slate-700' : 'border-slate-200 divide-slate-200'}`}>
+          {[{ term: termA, analogy: eA, color: '#0ea5e9' }, { term: termB, analogy: eB, color: '#8b5cf6' }].map(({ term, analogy, color }) => (
+            <div key={term} className={dm ? 'bg-slate-800' : 'bg-white'}>
+              {analogy ? (
+                <>
+                  <div className={`px-4 py-3 border-b flex items-center gap-2 ${dm ? 'border-slate-700 bg-slate-900/50' : 'border-slate-100 bg-slate-50'}`}>
+                    <span className="text-xl">{analogy.emoji}</span>
+                    <div>
+                      <div className="text-xs font-bold" style={{ color }}>{term} — Enterprise</div>
+                      <div className={`text-xs ${dm ? 'text-slate-400' : 'text-slate-500'}`}>{analogy.domain}</div>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-2">
+                    {analogy.scenarios.slice(0, 2).map((s, i) => (
+                      <ScenarioCard key={i} mode={s.mode} behavior={s.behavior} consequence={s.consequence} color={color} dm={dm} />
+                    ))}
+                  </div>
+                  <div className={`px-4 py-3 border-t text-xs ${dm ? 'border-slate-700 text-amber-300 bg-slate-900/30' : 'border-slate-100 text-amber-700 bg-amber-50/50'}`}>
+                    <span className="font-semibold">Key: </span>{analogy.takeaway}
+                  </div>
+                </>
+              ) : (
+                <div className={`p-6 text-center text-xs ${dm ? 'text-slate-500' : 'text-slate-400'}`}>
+                  No enterprise analogy for {term}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AnalogyContrast({ cA, cB, termA, termB, dm }: {
+  cA: ReturnType<typeof generateFallbackContent>;
+  cB: ReturnType<typeof generateFallbackContent>;
+  termA: string; termB: string; dm: boolean;
+}) {
+  const aA = cA.primaryAnalogy;
+  const aB = cB.primaryAnalogy;
+  const eA = cA.enterpriseAnalogy;
+  const eB = cB.enterpriseAnalogy;
+
+  const hasAny = aA || aB || eA || eB;
+  if (!hasAny) return null;
+
+  const sameDomain = aA && aB && aA.domain === aB.domain;
+
+  return (
+    <div>
+      <div className={`text-xs font-semibold uppercase tracking-wide mb-3 ${dm ? 'text-slate-400' : 'text-slate-500'}`}>
+        Real-World Analogy Contrast
+      </div>
+      {sameDomain && aA && aB
+        ? <SharedDomainContrast aA={aA} aB={aB} termA={termA} termB={termB} dm={dm} />
+        : <SeparateDomainContrast aA={aA} aB={aB} eA={eA} eB={eB} termA={termA} termB={termB} dm={dm} />
+      }
+    </div>
+  );
+}
+
 // ─── Live Comparison Panel ────────────────────────────────────────────────────
 
 function LiveCompare({ idA, idB, dm }: { idA: string; idB: string; dm: boolean }) {
@@ -172,12 +328,12 @@ function LiveCompare({ idA, idB, dm }: { idA: string; idB: string; dm: boolean }
     { label: 'When to use', a: conA.usage, b: conB.usage },
     { label: 'Key insight', a: conA.insight, b: conB.insight },
     { label: 'Advantages', a: cA.tradeoffs.advantages.slice(0, 2).join(' · '), b: cB.tradeoffs.advantages.slice(0, 2).join(' · ') },
-    { label: 'Risks', a: cA.tradeoffs.disadvantages[0] ?? '—', b: cB.tradeoffs.disadvantages[0] ?? '—' },
+    { label: 'Biggest risk', a: cA.tradeoffs.disadvantages[0] ?? '—', b: cB.tradeoffs.disadvantages[0] ?? '—' },
   ];
 
   return (
     <div className="space-y-5">
-      {/* Concept header */}
+      {/* Concept headers */}
       <div className="grid grid-cols-2 gap-4">
         {[{ con: conA, cat: catA, id: idA }, { con: conB, cat: catB, id: idB }].map(({ con, cat, id }) => (
           <button key={id} onClick={() => navigate(`/concept/${id}`)}
@@ -207,67 +363,8 @@ function LiveCompare({ idA, idB, dm }: { idA: string; idB: string; dm: boolean }
         ))}
       </div>
 
-      {/* Side-by-side table */}
-      <div className={`rounded-2xl border overflow-hidden ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-        <div className={`grid grid-cols-3 border-b text-xs font-semibold uppercase tracking-wide ${dm ? 'border-slate-700 bg-slate-900' : 'border-slate-100 bg-slate-50'}`}>
-          <div className={`p-3 ${dm ? 'text-slate-500' : 'text-slate-400'}`}>Aspect</div>
-          <div className="p-3 border-l text-sky-500" style={{ borderColor: dm ? '#334155' : '#e2e8f0' }}>{conA.term}</div>
-          <div className="p-3 border-l text-violet-500" style={{ borderColor: dm ? '#334155' : '#e2e8f0' }}>{conB.term}</div>
-        </div>
-        {rows.map((row, i) => (
-          <div key={i} className={`grid grid-cols-3 border-b last:border-0 ${dm ? 'border-slate-700' : 'border-slate-50'}`}>
-            <div className={`p-3 text-xs font-semibold ${dm ? 'text-slate-500 bg-slate-900/40' : 'text-slate-400 bg-slate-50/50'}`}>{row.label}</div>
-            <div className={`p-3 border-l text-xs leading-relaxed ${dm ? 'border-slate-700 text-slate-200' : 'border-slate-100 text-slate-700'}`}>{row.a}</div>
-            <div className={`p-3 border-l text-xs leading-relaxed ${dm ? 'border-slate-700 text-slate-200' : 'border-slate-100 text-slate-700'}`}>{row.b}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Analogy comparison */}
-      {(cA.primaryAnalogy || cB.primaryAnalogy) && (
-        <div>
-          <div className={`text-xs font-semibold uppercase tracking-wide mb-3 ${dm ? 'text-slate-400' : 'text-slate-500'}`}>Everyday Analogy</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div className={`text-xs font-semibold mb-2 text-sky-500`}>{conA.term}</div>
-              {cA.primaryAnalogy
-                ? <MiniAnalogyCard analogy={cA.primaryAnalogy} dm={dm} />
-                : <div className={`rounded-xl border p-4 text-xs ${dm ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'}`}>No analogy available yet.</div>
-              }
-            </div>
-            <div>
-              <div className={`text-xs font-semibold mb-2 text-violet-500`}>{conB.term}</div>
-              {cB.primaryAnalogy
-                ? <MiniAnalogyCard analogy={cB.primaryAnalogy} dm={dm} />
-                : <div className={`rounded-xl border p-4 text-xs ${dm ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'}`}>No analogy available yet.</div>
-              }
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Enterprise analogy comparison */}
-      {(cA.enterpriseAnalogy || cB.enterpriseAnalogy) && (
-        <div>
-          <div className={`text-xs font-semibold uppercase tracking-wide mb-3 ${dm ? 'text-slate-400' : 'text-slate-500'}`}>Enterprise Analogy</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div className={`text-xs font-semibold mb-2 text-sky-500`}>{conA.term}</div>
-              {cA.enterpriseAnalogy
-                ? <MiniAnalogyCard analogy={cA.enterpriseAnalogy} dm={dm} />
-                : <div className={`rounded-xl border p-4 text-xs ${dm ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'}`}>No analogy available yet.</div>
-              }
-            </div>
-            <div>
-              <div className={`text-xs font-semibold mb-2 text-violet-500`}>{conB.term}</div>
-              {cB.enterpriseAnalogy
-                ? <MiniAnalogyCard analogy={cB.enterpriseAnalogy} dm={dm} />
-                : <div className={`rounded-xl border p-4 text-xs ${dm ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'}`}>No analogy available yet.</div>
-              }
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── Analogy Contrast (the main feature) ── */}
+      <AnalogyContrast cA={cA} cB={cB} termA={conA.term} termB={conB.term} dm={dm} />
 
       {/* Modes table comparison */}
       {(cA.modesTable || cB.modesTable) && (
@@ -286,6 +383,22 @@ function LiveCompare({ idA, idB, dm }: { idA: string; idB: string; dm: boolean }
           </div>
         </div>
       )}
+
+      {/* Side-by-side comparison table */}
+      <div className={`rounded-2xl border overflow-hidden ${dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+        <div className={`grid grid-cols-3 border-b text-xs font-semibold uppercase tracking-wide ${dm ? 'border-slate-700 bg-slate-900' : 'border-slate-100 bg-slate-50'}`}>
+          <div className={`p-3 ${dm ? 'text-slate-500' : 'text-slate-400'}`}>Aspect</div>
+          <div className="p-3 border-l text-sky-500" style={{ borderColor: dm ? '#334155' : '#e2e8f0' }}>{conA.term}</div>
+          <div className="p-3 border-l text-violet-500" style={{ borderColor: dm ? '#334155' : '#e2e8f0' }}>{conB.term}</div>
+        </div>
+        {rows.map((row, i) => (
+          <div key={i} className={`grid grid-cols-3 border-b last:border-0 ${dm ? 'border-slate-700' : 'border-slate-50'}`}>
+            <div className={`p-3 text-xs font-semibold ${dm ? 'text-slate-500 bg-slate-900/40' : 'text-slate-400 bg-slate-50/50'}`}>{row.label}</div>
+            <div className={`p-3 border-l text-xs leading-relaxed ${dm ? 'border-slate-700 text-slate-200' : 'border-slate-100 text-slate-700'}`}>{row.a}</div>
+            <div className={`p-3 border-l text-xs leading-relaxed ${dm ? 'border-slate-700 text-slate-200' : 'border-slate-100 text-slate-700'}`}>{row.b}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
