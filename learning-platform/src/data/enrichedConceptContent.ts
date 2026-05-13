@@ -31,6 +31,32 @@ export interface Metric {
   context: string;
 }
 
+export interface AnalogyCharacter {
+  role: string;
+  represents: string;
+}
+
+export interface AnalogyScenario {
+  mode: string;
+  behavior: string;
+  consequence: string;
+}
+
+export interface RichAnalogy {
+  domain: string;
+  emoji: string;
+  setting: string;
+  characters: AnalogyCharacter[];
+  scenarios: AnalogyScenario[];
+  takeaway: string;
+}
+
+export interface ModeEntry {
+  value: string;
+  meaning: string;
+  schoolBehavior: string;
+}
+
 export interface EnrichedContent {
   simpleExplanation: {
     hook: string;
@@ -64,6 +90,9 @@ export interface EnrichedContent {
   advancedInsight: string;
   simulatorType?: 'temperature' | 'top-p' | 'context-window' | 'chunking' | 'rag-pipeline' | 'token-budget';
   architectureDiagram?: string;
+  primaryAnalogy?: RichAnalogy;
+  enterpriseAnalogy?: RichAnalogy;
+  modesTable?: ModeEntry[];
 }
 
 export const enrichedContent: Record<string, EnrichedContent> = {
