@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, Play, Pause, SkipForward, RotateCcw, Shield, Zap, CheckCircle2 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
@@ -373,32 +373,18 @@ function SystemFlowsTab({ dm }: { dm: boolean }) {
     });
   };
 
-  // Interval for auto-play
-  useState(() => {
+  useEffect(() => {
     if (!playing) return;
     const t = setInterval(advance, speed);
     return () => clearInterval(t);
-  });
+  // advance is stable within a render; listing speed/playing/totalSteps covers re-starts
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, speed]);
 
-  // Re-start interval when playing/speed changes
-  const [tick, setTick] = useState(0);
   const handlePlay = () => {
+    if (stepIdx >= totalSteps - 1) setStepIdx(0);
     setPlaying(p => !p);
-    setTick(t => t + 1);
   };
-
-  // Simple auto-advance using requestAnimationFrame approach via state
-  const [lastTick, setLastTick] = useState<number | null>(null);
-  useState(() => {
-    if (!playing) { setLastTick(null); return; }
-    const id = setTimeout(() => {
-      advance();
-      setLastTick(Date.now());
-    }, speed);
-    return () => clearTimeout(id);
-  });
-
-  // Clean approach: use effect-like logic through render
   const progressPct = totalSteps > 1 ? (stepIdx / (totalSteps - 1)) * 100 : 0;
   const actorStyle = ACTOR_STYLES[currentStep.actorType] ?? ACTOR_STYLES['system'];
 
