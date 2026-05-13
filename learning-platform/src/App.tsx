@@ -14,6 +14,7 @@ import { SlashCommandsStudioPage } from '@/pages/SlashCommandsStudioPage';
 import { CertificationPracticePage } from '@/pages/CertificationPracticePage';
 import { StudyMaterialsPage } from '@/pages/StudyMaterialsPage';
 import { ConnectorsPage } from '@/pages/ConnectorsPage';
+import { ArchitectureExplorerPage } from '@/pages/ArchitectureExplorerPage';
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/certification" element={<CertificationPracticePage />} />
           <Route path="/study" element={<StudyMaterialsPage />} />
           <Route path="/connectors" element={<ConnectorsPage />} />
+          <Route path="/architecture" element={<ArchitectureExplorerPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
