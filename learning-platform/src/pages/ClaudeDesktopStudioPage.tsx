@@ -168,7 +168,7 @@ function SidebarColumn({ mode, view, onChangeMode, onSelectItem, onOpenSection }
             <SidebarRow emoji="🔌" label="Connectors & MCP" active={activeId === 'connectors'} onClick={() => onOpenSection('connectors')} />
             <SidebarRow emoji="🏗️" label="Architecture" active={activeId === 'architecture'} onClick={() => onOpenSection('architecture')} />
             <SidebarLabel>Recents</SidebarLabel>
-            {['How MCP tool_use works', 'Explain context windows', 'Build an AI eval pipeline'].map(t => (
+            {['How does CLAUDE.md context loading work?', 'Explain MCP tool_use vs tool_result lifecycle', 'Design a multi-agent orchestration system'].map(t => (
               <SidebarRow key={t} emoji="💬" label={t} onClick={() => {}} />
             ))}
           </>
@@ -187,7 +187,7 @@ function SidebarColumn({ mode, view, onChangeMode, onSelectItem, onOpenSection }
             <SidebarLabel>Explore</SidebarLabel>
             <SidebarRow emoji="🔌" label="Connectors & MCP" active={activeId === 'connectors'} onClick={() => onOpenSection('connectors')} />
             <SidebarLabel>Dispatch</SidebarLabel>
-            {['Analyze Q4 engineering metrics', 'Weekly security scan', 'Nightly AI evals'].map(t => (
+            {['Weekly Claude eval accuracy report', 'Nightly MCP tool schema validation scan', 'Daily AI orchestration pipeline health check'].map(t => (
               <SidebarRow key={t} emoji="📋" label={t} onClick={() => {}} />
             ))}
           </>
@@ -204,7 +204,7 @@ function SidebarColumn({ mode, view, onChangeMode, onSelectItem, onOpenSection }
             <SidebarRow emoji="🏗️" label="Architecture" active={activeId === 'architecture'} onClick={() => onOpenSection('architecture')} />
             <SidebarRow emoji="🔌" label="Connectors & MCP" active={activeId === 'connectors'} onClick={() => onOpenSection('connectors')} />
             <SidebarLabel>Recents</SidebarLabel>
-            {['Add real Labrador images to website', 'Slack session for birthday-invitation', 'Fix TypeScript strict mode errors'].map(t => (
+            {['Build MCP server for GitHub connector', 'Add .claude/rules for API conventions', 'Debug Claude tool_use retry logic'].map(t => (
               <SidebarRow key={t} emoji="💻" label={t} onClick={() => {}} />
             ))}
           </>
