@@ -27,7 +27,8 @@ const navItems = [
   { path: '/connectors', icon: null, label: 'Connectors Hub', emoji: '🔌', isNew: false },
   { path: '/architecture', icon: null, label: 'Architecture Explorer', emoji: '🏗️', isNew: false },
   { path: '/studio', icon: null, label: 'Claude Studio', emoji: '✺', isNew: false },
-  { path: '/mcp-mastery', icon: null, label: 'MCP Mastery', emoji: '🔌', isNew: true },
+  { path: '/mcp-mastery', icon: null, label: 'MCP Mastery', emoji: '🔌', isNew: false },
+  { path: '/mcp-ecosystem', icon: null, label: 'Ecosystem Hub', emoji: '🌐', isNew: true },
 ];
 
 function SidebarContent({ onClose }: { onClose: () => void }) {
@@ -104,7 +105,9 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
                                 ? 'bg-gradient-to-r from-amber-600 to-orange-500 text-white shadow-sm'
                                 : path === '/mcp-mastery'
                                   ? 'bg-gradient-to-r from-pink-500 to-violet-600 text-white shadow-sm'
-                                  : 'bg-sky-500 text-white shadow-sm'
+                                  : path === '/mcp-ecosystem'
+                                    ? 'bg-gradient-to-r from-emerald-500 to-sky-500 text-white shadow-sm'
+                                    : 'bg-sky-500 text-white shadow-sm'
                   : darkMode
                     ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'

@@ -17,6 +17,7 @@ import { ConnectorsPage } from '@/pages/ConnectorsPage';
 import { ArchitectureExplorerPage } from '@/pages/ArchitectureExplorerPage';
 import { ClaudeDesktopStudioPage } from '@/pages/ClaudeDesktopStudioPage';
 import { MCPMasteryPage } from '@/pages/MCPMasteryPage';
+import { MCPEcosystemPage } from '@/pages/MCPEcosystemPage';
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/connectors" element={<ConnectorsPage />} />
           <Route path="/architecture" element={<ArchitectureExplorerPage />} />
           <Route path="/mcp-mastery" element={<MCPMasteryPage />} />
+          <Route path="/mcp-ecosystem" element={<MCPEcosystemPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
