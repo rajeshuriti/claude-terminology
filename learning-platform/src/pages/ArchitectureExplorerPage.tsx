@@ -13,6 +13,7 @@ import type { ArchNode, FlowSimulation, EvolutionStage, ArchPattern, DeepNodeCon
 type TabId = 'map' | 'flows' | 'evolution' | 'patterns' | 'learn';
 type ViewMode = 'beginner' | 'developer' | 'architect' | 'enterprise' | 'ai-engineering';
 type DTab = 'overview' | 'files' | 'usage' | 'patterns';
+type ChildTab = 'overview' | 'code';
 
 const TABS: Array<{ id: TabId; label: string; emoji: string }> = [
   { id: 'map', label: 'Architecture Map', emoji: '🗺️' },
@@ -57,11 +58,13 @@ const VIEW_MODE_BANNERS: Record<ViewMode, { label: string; color: string; hint: 
   'ai-engineering': { label: '🤖 AI Engineering', color: '#f59e0b', hint: 'Focus: how agents, MCP, and orchestration layers interact.' },
 };
 
-function FileTree({ selectedNodeId, selectedSubIdx, onSelectNode, onSelectSubItem, viewMode, search, dm }: {
+function FileTree({ selectedNodeId, selectedSubIdx, selectedChildName, onSelectNode, onSelectSubItem, onSelectChild, viewMode, search, dm }: {
   selectedNodeId: string;
   selectedSubIdx: number | null;
+  selectedChildName: string | null;
   onSelectNode: (id: string) => void;
   onSelectSubItem: (nodeId: string, idx: number) => void;
+  onSelectChild: (nodeId: string, idx: number, childName: string) => void;
   viewMode: ViewMode;
   search: string;
   dm: boolean;
@@ -270,28 +273,39 @@ function FileTree({ selectedNodeId, selectedSubIdx, onSelectNode, onSelectSubIte
                                 transition={{ duration: 0.12 }}
                                 className="overflow-hidden"
                               >
-                                {item.children?.map(child => (
-                                  <div
-                                    key={child.name}
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={() => onSelectSubItem(node.id, idx)}
-                                    onKeyDown={e => e.key === 'Enter' && onSelectSubItem(node.id, idx)}
-                                    className="flex items-center gap-0 py-0.5 cursor-pointer"
-                                    style={{ paddingLeft: 52 }}
-                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = hoverBg; }}
-                                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ''; }}
-                                  >
-                                    <span style={{ width: 16, height: 18, flexShrink: 0 }} />
-                                    <span style={{ fontSize: 11, lineHeight: 1, marginRight: 4 }}>{child.emoji}</span>
-                                    <span
-                                      className="flex-1 truncate font-mono"
-                                      style={{ fontSize: 11, color: dm ? '#64748b' : '#94a3b8' }}
+                                {item.children?.map(child => {
+                                  const isChildSelected = selectedNodeId === node.id && selectedSubIdx === idx && selectedChildName === child.name;
+                                  return (
+                                    <div
+                                      key={child.name}
+                                      role="button"
+                                      tabIndex={0}
+                                      onClick={() => onSelectChild(node.id, idx, child.name)}
+                                      onKeyDown={e => e.key === 'Enter' && onSelectChild(node.id, idx, child.name)}
+                                      className="flex items-center gap-0 py-0.5 cursor-pointer"
+                                      style={{
+                                        paddingLeft: 52,
+                                        background: isChildSelected ? selectedBg : undefined,
+                                        borderLeft: isChildSelected ? '2px solid #6366f1' : '2px solid transparent',
+                                      }}
+                                      onMouseEnter={e => { if (!isChildSelected) (e.currentTarget as HTMLElement).style.background = hoverBg; }}
+                                      onMouseLeave={e => { if (!isChildSelected) (e.currentTarget as HTMLElement).style.background = ''; }}
                                     >
-                                      {child.name}
-                                    </span>
-                                  </div>
-                                ))}
+                                      <span style={{ width: 16, height: 18, flexShrink: 0 }} />
+                                      <span style={{ fontSize: 11, lineHeight: 1, marginRight: 4 }}>{child.emoji}</span>
+                                      <span
+                                        className="flex-1 truncate font-mono"
+                                        style={{
+                                          fontSize: 11,
+                                          color: isChildSelected ? (dm ? '#e2e8f0' : '#1e293b') : (dm ? '#64748b' : '#94a3b8'),
+                                          fontWeight: isChildSelected ? 600 : 400,
+                                        }}
+                                      >
+                                        {child.name}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
                               </motion.div>
                             )}
                           </AnimatePresence>
@@ -318,10 +332,10 @@ function FileTree({ selectedNodeId, selectedSubIdx, onSelectNode, onSelectSubIte
 
 // ── Shared tab bar used inside detail panels ─────────────────────────────────
 
-function DetailTabBar({ tabs, active, onSelect, dm }: {
-  tabs: Array<{ id: DTab; label: string }>;
-  active: DTab;
-  onSelect: (t: DTab) => void;
+function DetailTabBar<T extends string>({ tabs, active, onSelect, dm }: {
+  tabs: Array<{ id: T; label: string }>;
+  active: T;
+  onSelect: (t: T) => void;
   dm: boolean;
 }) {
   return (
@@ -473,11 +487,11 @@ function SubItemDetail({ nodeId, idx, dm }: { nodeId: string; idx: number; dm: b
         <AnimatePresence mode="wait">
           {dTab === 'overview' && (
             <motion.div key="sub-overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-              <div className="p-4 space-y-4">
-                <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{item.description}</p>
+              <div className="p-4 space-y-5">
+                <DescriptionRenderer text={item.description} dm={dm} />
                 {item.example && (
                   <div>
-                    <SectionLabel dm={dm} className="mb-1.5">Example</SectionLabel>
+                    <SectionLabel dm={dm} className="mb-1.5">Quick Example</SectionLabel>
                     <pre className={`text-xs rounded-xl p-3 overflow-x-auto leading-relaxed font-mono ${dm ? 'bg-[#0d1117] text-emerald-300' : 'bg-slate-900 text-emerald-400'}`}>{item.example}</pre>
                   </div>
                 )}
@@ -501,6 +515,147 @@ function SubItemDetail({ nodeId, idx, dm }: { nodeId: string; idx: number; dm: b
           {dTab === 'patterns' && deep && (
             <motion.div key="sub-patterns" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <DeepPatternsTab deep={deep} dm={dm} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Structured description renderer ─────────────────────────────────────────
+
+function DescriptionRenderer({ text, dm }: { text: string; dm: boolean }) {
+  const blocks = text.trim().split('\n\n');
+  return (
+    <div className="space-y-4">
+      {blocks.map((block, i) => {
+        const lines = block.split('\n');
+        const first = lines[0];
+
+        if (first.startsWith('## ')) {
+          const heading = first.slice(3);
+          const rest = lines.slice(1).filter(Boolean);
+          const isBulletBlock = rest.length > 0 && rest.every(l => l.startsWith('- '));
+          return (
+            <div key={i}>
+              <div className={`text-xs font-bold uppercase tracking-wider mb-1.5 ${dm ? 'text-violet-400' : 'text-violet-600'}`}>
+                {heading}
+              </div>
+              {isBulletBlock ? (
+                <ul className="space-y-1.5">
+                  {rest.map((l, j) => (
+                    <li key={j} className={`flex items-start gap-2 text-sm ${tw(dm, 'body')}`}>
+                      <span className="text-emerald-500 shrink-0 mt-0.5">•</span>
+                      <span className="leading-relaxed">{l.slice(2)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : rest.length > 0 ? (
+                <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{rest.join(' ')}</p>
+              ) : null}
+            </div>
+          );
+        }
+
+        const allBullets = lines.every(l => l.startsWith('- ') || l === '');
+        if (allBullets) {
+          return (
+            <ul key={i} className="space-y-1.5">
+              {lines.filter(Boolean).map((l, j) => (
+                <li key={j} className={`flex items-start gap-2 text-sm ${tw(dm, 'body')}`}>
+                  <span className="text-emerald-500 shrink-0 mt-0.5">•</span>
+                  <span className="leading-relaxed">{l.slice(2)}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
+        return <p key={i} className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{block}</p>;
+      })}
+    </div>
+  );
+}
+
+// ── Child file detail panel ───────────────────────────────────────────────────
+
+function ChildFileDetail({ nodeId, subIdx, childName, dm }: {
+  nodeId: string;
+  subIdx: number;
+  childName: string;
+  dm: boolean;
+}) {
+  const [tab, setTab] = useState<ChildTab>('overview');
+  const node = archNodes.find(n => n.id === nodeId);
+  useEffect(() => setTab('overview'), [nodeId, subIdx, childName]);
+
+  if (!node?.subItems) return null;
+  const subItem = node.subItems[subIdx];
+  const child = subItem.children?.find(c => c.name === childName);
+  if (!child) return null;
+
+  const tabs: Array<{ id: ChildTab; label: string }> = [
+    { id: 'overview', label: '📖 Overview' },
+    ...(child.sampleCode ? [{ id: 'code' as ChildTab, label: '💻 Sample Code' }] : []),
+  ];
+
+  return (
+    <motion.div
+      key={`${nodeId}-${subIdx}-${childName}`}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2 }}
+      className={`flex flex-col h-full ${tw(dm, 'card')}`}
+    >
+      {/* Breadcrumb header */}
+      <div className="p-4 border-b" style={{ borderColor: node.color + '40', background: node.color + '10' }}>
+        <div className={`flex items-center gap-1.5 text-xs font-mono mb-2 ${tw(dm, 'muted')}`}>
+          <span>{node.emoji}</span><span>{node.label}</span>
+          <ChevronRight size={10} />
+          <span style={{ color: node.color }}>{subItem.name}</span>
+          <ChevronRight size={10} />
+          <span className={tw(dm, 'heading')}>{child.name}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">{child.emoji}</span>
+          <code className={`text-base font-mono font-bold ${tw(dm, 'heading')}`}>{child.name}</code>
+        </div>
+        <div className="flex items-center gap-2 mt-1.5">
+          <Badge color={node.color}>{node.label}</Badge>
+          {child.language && <Badge color="#64748b">{child.language}</Badge>}
+        </div>
+      </div>
+
+      {tabs.length > 1 && <DetailTabBar tabs={tabs} active={tab} onSelect={setTab} dm={dm} />}
+
+      <div className="flex-1 overflow-y-auto">
+        <AnimatePresence mode="wait">
+          {tab === 'overview' && (
+            <motion.div key="child-overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <div className="p-4 space-y-5">
+                <DescriptionRenderer text={child.description ?? subItem.description} dm={dm} />
+                <div className="p-3 rounded-xl border-l-4" style={{ borderColor: node.color, background: node.color + '10' }}>
+                  <div className="text-xs font-bold mb-1" style={{ color: node.color }}>Part of {subItem.name}</div>
+                  <p className={`text-xs leading-relaxed ${tw(dm, 'body')}`}>{subItem.description}</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+          {tab === 'code' && child.sampleCode && (
+            <motion.div key="child-code" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <div className="p-4">
+                <SectionLabel dm={dm} className="mb-2">Sample Code — {child.name}</SectionLabel>
+                <pre
+                  className={`text-xs rounded-xl p-4 overflow-x-auto leading-relaxed font-mono whitespace-pre ${
+                    dm ? 'bg-[#0d1117] text-emerald-300' : 'bg-slate-900 text-emerald-400'
+                  }`}
+                  style={{ fontSize: 11 }}
+                >
+                  {child.sampleCode}
+                </pre>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -789,13 +944,15 @@ function NodeDetailPanel({ node, viewMode, dm, onNavigate }: {
 function ArchitectureMapTab({ dm }: { dm: boolean }) {
   const [selectedNodeId, setSelectedNodeId] = useState<string>('claude-md');
   const [selectedSubIdx, setSelectedSubIdx] = useState<number | null>(null);
+  const [selectedChildName, setSelectedChildName] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('developer');
   const [search, setSearch] = useState('');
 
   const selectedNode = archNodes.find(n => n.id === selectedNodeId) ?? archNodes[0];
 
-  const handleSelectNode = (id: string) => { setSelectedNodeId(id); setSelectedSubIdx(null); };
-  const handleSelectSubItem = (nodeId: string, idx: number) => { setSelectedNodeId(nodeId); setSelectedSubIdx(idx); };
+  const handleSelectNode = (id: string) => { setSelectedNodeId(id); setSelectedSubIdx(null); setSelectedChildName(null); };
+  const handleSelectSubItem = (nodeId: string, idx: number) => { setSelectedNodeId(nodeId); setSelectedSubIdx(idx); setSelectedChildName(null); };
+  const handleSelectChild = (nodeId: string, idx: number, childName: string) => { setSelectedNodeId(nodeId); setSelectedSubIdx(idx); setSelectedChildName(childName); };
 
   return (
     <div className="flex flex-col h-full">
@@ -833,8 +990,10 @@ function ArchitectureMapTab({ dm }: { dm: boolean }) {
         <FileTree
           selectedNodeId={selectedNodeId}
           selectedSubIdx={selectedSubIdx}
+          selectedChildName={selectedChildName}
           onSelectNode={handleSelectNode}
           onSelectSubItem={handleSelectSubItem}
+          onSelectChild={handleSelectChild}
           viewMode={viewMode}
           search={search}
           dm={dm}
@@ -843,7 +1002,9 @@ function ArchitectureMapTab({ dm }: { dm: boolean }) {
         {/* Detail panel */}
         <div className="flex-1 overflow-hidden flex flex-col">
           <AnimatePresence mode="wait">
-            {selectedSubIdx !== null ? (
+            {selectedChildName !== null && selectedSubIdx !== null ? (
+              <ChildFileDetail key={`${selectedNodeId}-${selectedSubIdx}-${selectedChildName}`} nodeId={selectedNodeId} subIdx={selectedSubIdx} childName={selectedChildName} dm={dm} />
+            ) : selectedSubIdx !== null ? (
               <SubItemDetail key={`${selectedNodeId}-${selectedSubIdx}`} nodeId={selectedNodeId} idx={selectedSubIdx} dm={dm} />
             ) : (
               <NodeDetailPanel
