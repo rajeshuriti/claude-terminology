@@ -64,7 +64,7 @@ function SidebarRow({ emoji, label, active, badge, onClick }: {
       }}
     >
       <span style={{ width: 18, textAlign: 'center', fontSize: 14, flexShrink: 0 }}>{emoji}</span>
-      <span style={{ flex: 1, truncate: true }}>{label}</span>
+      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
       {badge && (
         <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 3, background: '#2a2a2a', color: DIM }}>{badge}</span>
       )}
@@ -515,8 +515,9 @@ function DetailPanel({ item, tab, onTabChange, onBack }: {
             style={{
               padding: '10px 14px', fontSize: 13,
               color: tab === t.id ? TEXT : MUTED,
+              borderTop: 'none', borderLeft: 'none', borderRight: 'none',
               borderBottom: `2px solid ${tab === t.id ? ORANGE : 'transparent'}`,
-              background: 'transparent', border: 'none',
+              background: 'transparent',
               cursor: 'pointer', transition: 'color 0.1s',
             }}
           >
