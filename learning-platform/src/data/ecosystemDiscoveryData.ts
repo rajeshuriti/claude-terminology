@@ -875,7 +875,7 @@ export const ecoServers: EcoServer[] = [
       'No asset allowlisting — Claude may reference external images/fonts that load from untrusted URLs during render',
       'Rendering in the same process as the application — use an isolated render worker',
     ],
-    setup: 'complex', readiness: 'emerging',
+    setup: 'complex', readiness: 'experimental',
     worksWellWith: ['filesystem', 'postgres', 'brave-search'],
   },
 
