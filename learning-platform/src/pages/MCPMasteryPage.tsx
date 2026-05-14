@@ -17,6 +17,45 @@ import type { MCPSectionDef, MCPViewMode, MCPServerInfo, MCPRisk } from '@/data/
 
 const GROUP_ORDER = ['foundation', 'technical', 'ecosystem', 'production', 'advanced'] as const;
 
+// ── Severity levels visible per mode ─────────────────────────────────────────
+const SEVERITY_FILTER: Record<MCPViewMode, readonly string[]> = {
+  beginner:   ['critical'],
+  developer:  ['critical', 'high'],
+  engineer:   ['critical', 'high', 'medium', 'low'],
+  enterprise: ['critical', 'high', 'medium', 'low'],
+  architect:  ['critical', 'high', 'medium', 'low'],
+};
+
+// ── Extra callout content per mode ────────────────────────────────────────────
+const MODE_CALLOUT: Partial<Record<MCPViewMode, { icon: string; title: string; color: string; bullets: string[] }>> = {
+  engineer: {
+    icon: '⚙️', color: '#8b5cf6', title: 'Engineering Depth',
+    bullets: [
+      'Trace how this component interacts with surrounding system layers',
+      'Identify the failure modes and how they propagate upstream',
+      'Consider memory, latency, and throughput at scale',
+    ],
+  },
+  enterprise: {
+    icon: '🏢', color: '#ef4444', title: 'Governance Checklist',
+    bullets: [
+      'Establish structured audit logs for all operations in this domain',
+      'Define RBAC: who can initiate, approve, and audit these operations',
+      'Map to compliance requirements (SOC2, GDPR, HIPAA as applicable)',
+      'Document blast radius if this component is compromised or misconfigured',
+    ],
+  },
+  architect: {
+    icon: '🏗️', color: '#f59e0b', title: 'Design Considerations',
+    bullets: [
+      'How does this compose in multi-agent or multi-tenant architectures?',
+      'Define the contract boundary: what must callers guarantee?',
+      'What observability signals should this component emit at runtime?',
+      'Evaluate horizontal scaling characteristics and bottlenecks',
+    ],
+  },
+};
+
 // ── DescriptionRenderer ───────────────────────────────────────────────────────
 
 function DescriptionRenderer({ text, dm }: { text: string; dm: boolean }) {
@@ -56,6 +95,21 @@ function DescriptionRenderer({ text, dm }: { text: string; dm: boolean }) {
   );
 }
 
+// Beginner-only: strips ## headings, returns first N plain paragraphs
+function BeginnerOverview({ text, dm }: { text: string; dm: boolean }) {
+  const blocks = text.trim().split('\n\n');
+  const plain = blocks
+    .filter(b => !b.startsWith('## '))
+    .slice(0, 2);
+  return (
+    <div className="space-y-3">
+      {plain.map((b, i) => (
+        <p key={i} className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{b}</p>
+      ))}
+    </div>
+  );
+}
+
 // ── CodeBlock ─────────────────────────────────────────────────────────────────
 
 function CodeBlock({ code }: { code: string }) {
@@ -68,32 +122,68 @@ function CodeBlock({ code }: { code: string }) {
 
 // ── StandardSectionView ───────────────────────────────────────────────────────
 
-function StandardSectionView({ section, dm }: { section: MCPSectionDef; dm: boolean }) {
+function StandardSectionView({ section, dm, viewMode }: { section: MCPSectionDef; dm: boolean; viewMode: MCPViewMode }) {
+  const showCode    = viewMode !== 'beginner' && viewMode !== 'enterprise';
+  const showAnalogy = viewMode === 'beginner' || viewMode === 'architect' || viewMode === 'developer';
+  const callout     = MODE_CALLOUT[viewMode];
+
   return (
     <div className="space-y-5">
-      {section.analogy && (
-        <div className={`rounded-xl p-4 ${dm ? 'bg-amber-950/30 border border-amber-800/40' : 'bg-amber-50 border border-amber-200'}`}
-          style={{ borderLeft: '3px solid #d97706' }}>
-          <div className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Analogy</div>
-          <p className={`text-sm italic ${tw(dm, 'body')}`}>{section.analogy}</p>
+      {/* ── Beginner: analogy is the hero ── */}
+      {viewMode === 'beginner' && section.analogy && (
+        <div className={`rounded-xl p-5 ${dm ? 'bg-emerald-950/40 border border-emerald-700/40' : 'bg-emerald-50 border border-emerald-200'}`}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">💡</span>
+            <div className="text-sm font-bold" style={{ color: '#10b981' }}>Think of it this way</div>
+          </div>
+          <p className={`text-sm leading-relaxed font-medium ${dm ? 'text-emerald-100' : 'text-emerald-900'}`}>
+            {section.analogy}
+          </p>
         </div>
       )}
 
+      {/* ── Non-beginner: small analogy reference ── */}
+      {showAnalogy && viewMode !== 'beginner' && section.analogy && (
+        <div className={`rounded-xl p-3.5 ${dm ? 'bg-amber-950/30 border border-amber-800/40' : 'bg-amber-50 border border-amber-200'}`}
+          style={{ borderLeft: '3px solid #d97706' }}>
+          <span className="text-xs font-bold mr-2" style={{ color: '#d97706' }}>Analogy</span>
+          <span className={`text-sm italic ${tw(dm, 'body')}`}>{section.analogy}</span>
+        </div>
+      )}
+
+      {/* ── Overview ── */}
       <div className={`rounded-xl p-5 border ${tw(dm, 'card')} ${tw(dm, 'border')}`}>
-        <div className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: '#8b5cf6' }}>Overview</div>
-        <DescriptionRenderer text={section.overview} dm={dm} />
+        <div className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: '#8b5cf6' }}>
+          {viewMode === 'beginner' ? 'The Big Picture' : 'Overview'}
+        </div>
+        {viewMode === 'beginner'
+          ? <BeginnerOverview text={section.overview} dm={dm} />
+          : <DescriptionRenderer text={section.overview} dm={dm} />
+        }
       </div>
 
+      {/* ── Key Points ── */}
       {section.keyPoints && (
         <div className={`rounded-xl p-5 border ${tw(dm, 'card')} ${tw(dm, 'border')}`}>
-          <div className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: '#0ea5e9' }}>Key Takeaways</div>
+          <div className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: '#0ea5e9' }}>
+            {viewMode === 'beginner' ? 'What to Remember' : viewMode === 'enterprise' ? 'Business Impact Points' : 'Key Takeaways'}
+          </div>
           <div className="space-y-2.5">
             {section.keyPoints.map((point, i) => (
               <div key={i} className="flex gap-3 text-sm">
-                <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
-                  style={{ background: 'rgba(14,165,233,0.15)', color: '#0ea5e9' }}>
-                  {i + 1}
-                </span>
+                {viewMode === 'beginner' ? (
+                  <span className="text-base shrink-0 leading-none mt-0.5" style={{ color: '#10b981' }}>✓</span>
+                ) : viewMode === 'enterprise' ? (
+                  <span className="text-xs px-1.5 py-0.5 rounded font-bold shrink-0 mt-0.5 h-fit"
+                    style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                ) : (
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
+                    style={{ background: 'rgba(14,165,233,0.15)', color: '#0ea5e9' }}>
+                    {i + 1}
+                  </span>
+                )}
                 <span className={tw(dm, 'body')}>{point}</span>
               </div>
             ))}
@@ -101,10 +191,32 @@ function StandardSectionView({ section, dm }: { section: MCPSectionDef; dm: bool
         </div>
       )}
 
-      {section.codeExample && (
+      {/* ── Code Example ── */}
+      {showCode && section.codeExample && (
         <div className={`rounded-xl p-5 border ${tw(dm, 'card')} ${tw(dm, 'border')}`}>
-          <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: '#10b981' }}>Code Example</div>
+          <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: '#10b981' }}>
+            {viewMode === 'architect' ? 'Reference Implementation' : 'Code Example'}
+          </div>
           <CodeBlock code={section.codeExample} />
+        </div>
+      )}
+
+      {/* ── Mode-specific callout ── */}
+      {callout && (
+        <div className={`rounded-xl p-4 border`}
+          style={{ background: callout.color + '12', borderColor: callout.color + '40' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <span>{callout.icon}</span>
+            <div className="text-sm font-bold" style={{ color: callout.color }}>{callout.title}</div>
+          </div>
+          <div className="space-y-1.5">
+            {callout.bullets.map((b, i) => (
+              <div key={i} className="flex gap-2 text-sm">
+                <span style={{ color: callout.color }} className="shrink-0 mt-0.5">→</span>
+                <span className={tw(dm, 'body')}>{b}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -113,15 +225,21 @@ function StandardSectionView({ section, dm }: { section: MCPSectionDef; dm: bool
 
 // ── LifecycleSectionView ──────────────────────────────────────────────────────
 
-function LifecycleSectionView({ section, dm }: { section: MCPSectionDef; dm: boolean }) {
+const LIFECYCLE_AUDIT_STEPS = new Set(['execute', 'synthesize', 'tool_use']);
+
+function LifecycleSectionView({ section, dm, viewMode }: { section: MCPSectionDef; dm: boolean; viewMode: MCPViewMode }) {
   const [activeStep, setActiveStep] = useState(0);
   const step = lifecycleSteps[activeStep];
   const actorColor = ACTOR_COLORS[step.actorType] ?? '#8b5cf6';
+  const showCode = viewMode !== 'beginner' && viewMode !== 'enterprise';
 
   return (
     <div className="space-y-5">
       <div className={`rounded-xl p-5 border ${tw(dm, 'card')} ${tw(dm, 'border')}`}>
-        <DescriptionRenderer text={section.overview} dm={dm} />
+        {viewMode === 'beginner'
+          ? <BeginnerOverview text={section.overview} dm={dm} />
+          : <DescriptionRenderer text={section.overview} dm={dm} />
+        }
       </div>
 
       <div className={`rounded-xl p-5 border ${tw(dm, 'card')} ${tw(dm, 'border')}`}>
@@ -132,6 +250,7 @@ function LifecycleSectionView({ section, dm }: { section: MCPSectionDef; dm: boo
           {lifecycleSteps.map((s, i) => {
             const color = ACTOR_COLORS[s.actorType] ?? '#8b5cf6';
             const isActive = i === activeStep;
+            const isAuditPoint = viewMode === 'enterprise' && LIFECYCLE_AUDIT_STEPS.has(s.id);
             return (
               <button
                 key={s.id}
@@ -139,7 +258,8 @@ function LifecycleSectionView({ section, dm }: { section: MCPSectionDef; dm: boo
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                   isActive
                     ? 'text-white border-transparent'
-                    : dm ? 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200' : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                    : dm ? 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'
+                          : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
                 }`}
                 style={isActive ? { background: color, borderColor: color } : {}}
               >
@@ -148,6 +268,11 @@ function LifecycleSectionView({ section, dm }: { section: MCPSectionDef; dm: boo
                   {i + 1}
                 </span>
                 {s.actor}
+                {isAuditPoint && (
+                  <span className="text-xs px-1 rounded font-bold" style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444' }}>
+                    AUDIT
+                  </span>
+                )}
               </button>
             );
           })}
@@ -167,43 +292,78 @@ function LifecycleSectionView({ section, dm }: { section: MCPSectionDef; dm: boo
                 style={{ background: actorColor }}>
                 {activeStep + 1}
               </div>
-              <div>
-                <div className="text-xs font-bold uppercase tracking-wider mb-0.5" style={{ color: actorColor }}>
-                  {step.actor}
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <div className="text-xs font-bold uppercase tracking-wider" style={{ color: actorColor }}>
+                    {step.actor}
+                  </div>
+                  {viewMode === 'enterprise' && LIFECYCLE_AUDIT_STEPS.has(step.id) && (
+                    <span className="text-xs px-1.5 py-0.5 rounded font-bold"
+                      style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
+                      Audit Point
+                    </span>
+                  )}
                 </div>
-                <div className={`text-base font-semibold ${tw(dm, 'heading')}`}>{step.action}</div>
+                <div className={`text-base font-semibold mt-0.5 ${tw(dm, 'heading')}`}>{step.action}</div>
               </div>
             </div>
             <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{step.detail}</p>
-            {step.code && <CodeBlock code={step.code} />}
+            {showCode && step.code && <CodeBlock code={step.code} />}
           </motion.div>
         </AnimatePresence>
       </div>
 
       {section.keyPoints && (
         <div className={`rounded-xl p-5 border ${tw(dm, 'card')} ${tw(dm, 'border')}`}>
-          <div className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: '#0ea5e9' }}>Key Takeaways</div>
+          <div className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: '#0ea5e9' }}>
+            Key Takeaways
+          </div>
           <div className="space-y-2.5">
             {section.keyPoints.map((point, i) => (
               <div key={i} className="flex gap-3 text-sm">
-                <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
-                  style={{ background: 'rgba(14,165,233,0.15)', color: '#0ea5e9' }}>
-                  {i + 1}
-                </span>
+                {viewMode === 'beginner'
+                  ? <span className="text-base shrink-0 leading-none mt-0.5" style={{ color: '#10b981' }}>✓</span>
+                  : <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
+                      style={{ background: 'rgba(14,165,233,0.15)', color: '#0ea5e9' }}>
+                      {i + 1}
+                    </span>
+                }
                 <span className={tw(dm, 'body')}>{point}</span>
               </div>
             ))}
           </div>
         </div>
       )}
+
+      {MODE_CALLOUT[viewMode] && (() => {
+        const c = MODE_CALLOUT[viewMode]!;
+        return (
+          <div className="rounded-xl p-4 border" style={{ background: c.color + '12', borderColor: c.color + '40' }}>
+            <div className="flex items-center gap-2 mb-3">
+              <span>{c.icon}</span>
+              <div className="text-sm font-bold" style={{ color: c.color }}>{c.title}</div>
+            </div>
+            <div className="space-y-1.5">
+              {c.bullets.map((b, i) => (
+                <div key={i} className="flex gap-2 text-sm">
+                  <span style={{ color: c.color }} className="shrink-0 mt-0.5">→</span>
+                  <span className={tw(dm, 'body')}>{b}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
 
 // ── ServersSectionView ────────────────────────────────────────────────────────
 
-function ServersSectionView({ section, dm }: { section: MCPSectionDef; dm: boolean }) {
+function ServersSectionView({ section, dm, viewMode }: { section: MCPSectionDef; dm: boolean; viewMode: MCPViewMode }) {
   const [selected, setSelected] = useState<MCPServerInfo | null>(null);
+  const showToolExamples = viewMode !== 'beginner';
+  const securityFirst    = viewMode === 'enterprise';
 
   if (selected) {
     return (
@@ -228,19 +388,34 @@ function ServersSectionView({ section, dm }: { section: MCPSectionDef; dm: boole
             </span>
           </div>
 
+          {/* Analogy — always */}
           <div className={`text-sm italic p-3 rounded-lg mb-5 ${dm ? 'bg-slate-800' : 'bg-slate-50'}`}
             style={{ borderLeft: `3px solid ${selected.color}` }}>
             {selected.analogy}
           </div>
 
+          {/* Enterprise: security first */}
+          {securityFirst && (
+            <div className={`p-4 rounded-xl border mb-5 ${dm ? 'border-red-500/30 bg-red-950/20' : 'border-red-200 bg-red-50'}`}>
+              <div className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#ef4444' }}>
+                Security &amp; Governance — Required Reading
+              </div>
+              <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{selected.security}</p>
+            </div>
+          )}
+
           <div className="space-y-5">
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: selected.color }}>What It Enables</div>
+              <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: selected.color }}>
+                What It Enables
+              </div>
               <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{selected.whatItEnables}</p>
             </div>
 
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#10b981' }}>Use Cases</div>
+              <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#10b981' }}>
+                {viewMode === 'enterprise' ? 'Approved Use Cases' : 'Use Cases'}
+              </div>
               <div className="space-y-1.5">
                 {selected.useCases.map((uc, i) => (
                   <div key={i} className="flex gap-2 text-sm">
@@ -251,19 +426,27 @@ function ServersSectionView({ section, dm }: { section: MCPSectionDef; dm: boole
               </div>
             </div>
 
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#8b5cf6' }}>Tool Examples</div>
-              <div className="flex flex-wrap gap-2">
-                {selected.toolExamples.map((t, i) => (
-                  <code key={i} className="text-xs px-2.5 py-1 rounded-lg bg-slate-950 text-emerald-300 font-mono">{t}</code>
-                ))}
+            {showToolExamples && (
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#8b5cf6' }}>
+                  Tool Examples
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selected.toolExamples.map((t, i) => (
+                    <code key={i} className="text-xs px-2.5 py-1 rounded-lg bg-slate-950 text-emerald-300 font-mono">{t}</code>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className={`p-4 rounded-xl border ${dm ? 'border-red-500/30 bg-red-950/20' : 'border-red-200 bg-red-50'}`}>
-              <div className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#ef4444' }}>Security Guidance</div>
-              <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{selected.security}</p>
-            </div>
+            {!securityFirst && (
+              <div className={`p-4 rounded-xl border ${dm ? 'border-red-500/30 bg-red-950/20' : 'border-red-200 bg-red-50'}`}>
+                <div className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#ef4444' }}>
+                  Security Guidance
+                </div>
+                <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{selected.security}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -273,7 +456,10 @@ function ServersSectionView({ section, dm }: { section: MCPSectionDef; dm: boole
   return (
     <div className="space-y-5">
       <div className={`rounded-xl p-5 border ${tw(dm, 'card')} ${tw(dm, 'border')}`}>
-        <DescriptionRenderer text={section.overview} dm={dm} />
+        {viewMode === 'beginner'
+          ? <BeginnerOverview text={section.overview} dm={dm} />
+          : <DescriptionRenderer text={section.overview} dm={dm} />
+        }
       </div>
 
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
@@ -297,7 +483,10 @@ function ServersSectionView({ section, dm }: { section: MCPSectionDef; dm: boole
               </span>
             </div>
             <div className={`text-xs ${tw(dm, 'muted')}`}>
-              {server.toolExamples.length} tools · explore →
+              {viewMode === 'enterprise'
+                ? '⚠ click to review security guidance'
+                : `${server.toolExamples.length} tools · explore →`
+              }
             </div>
           </button>
         ))}
@@ -308,14 +497,26 @@ function ServersSectionView({ section, dm }: { section: MCPSectionDef; dm: boole
 
 // ── SecuritySectionView ───────────────────────────────────────────────────────
 
-function SecuritySectionView({ section, dm }: { section: MCPSectionDef; dm: boolean }) {
+function SecuritySectionView({ section, dm, viewMode }: { section: MCPSectionDef; dm: boolean; viewMode: MCPViewMode }) {
   const [selectedRisk, setSelectedRisk] = useState<MCPRisk | null>(null);
-  const severities = ['critical', 'high', 'medium', 'low'] as const;
+  const allowedSeverities = SEVERITY_FILTER[viewMode];
+  const severities = (['critical', 'high', 'medium', 'low'] as const).filter(s => allowedSeverities.includes(s));
+  const autoExpand = viewMode === 'enterprise';
 
   return (
     <div className="space-y-5">
       <div className={`rounded-xl p-5 border ${tw(dm, 'card')} ${tw(dm, 'border')}`}>
-        <DescriptionRenderer text={section.overview} dm={dm} />
+        {viewMode === 'beginner'
+          ? (
+            <div className="space-y-3">
+              <BeginnerOverview text={section.overview} dm={dm} />
+              <div className={`p-3 rounded-lg text-xs ${dm ? 'bg-emerald-950/40 text-emerald-300' : 'bg-emerald-50 text-emerald-800'}`}>
+                Beginner view shows only Critical risks. Switch to Engineer or Enterprise mode to see all 12 risks.
+              </div>
+            </div>
+          )
+          : <DescriptionRenderer text={section.overview} dm={dm} />
+        }
       </div>
 
       {severities.map(sev => {
@@ -334,11 +535,11 @@ function SecuritySectionView({ section, dm }: { section: MCPSectionDef; dm: bool
             </div>
             <div className="space-y-2">
               {risks.map(risk => {
-                const isOpen = selectedRisk?.id === risk.id;
+                const isOpen = autoExpand || selectedRisk?.id === risk.id;
                 return (
                   <div key={risk.id}>
                     <button
-                      onClick={() => setSelectedRisk(isOpen ? null : risk)}
+                      onClick={() => setSelectedRisk(isOpen && !autoExpand ? null : risk)}
                       className={`w-full text-left p-4 rounded-xl border transition-all ${tw(dm, 'card')} ${
                         isOpen
                           ? dm ? 'border-slate-500 rounded-b-none' : 'border-slate-300 rounded-b-none'
@@ -351,9 +552,11 @@ function SecuritySectionView({ section, dm }: { section: MCPSectionDef; dm: bool
                           <div className={`font-semibold text-sm ${tw(dm, 'heading')}`}>{risk.title}</div>
                           <div className={`text-xs mt-0.5 ${tw(dm, 'muted')}`}>{risk.description}</div>
                         </div>
-                        <span className="text-xs shrink-0 mt-1" style={{ color: colors.text }}>
-                          {isOpen ? '▲' : '▼'}
-                        </span>
+                        {!autoExpand && (
+                          <span className="text-xs shrink-0 mt-1" style={{ color: colors.text }}>
+                            {isOpen ? '▲' : '▼'}
+                          </span>
+                        )}
                       </div>
                     </button>
 
@@ -376,7 +579,7 @@ function SecuritySectionView({ section, dm }: { section: MCPSectionDef; dm: bool
                             </div>
                             <div>
                               <div className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#10b981' }}>
-                                Mitigation
+                                {viewMode === 'enterprise' ? 'Required Controls' : 'Mitigation'}
                               </div>
                               <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{risk.mitigation}</p>
                             </div>
@@ -397,13 +600,14 @@ function SecuritySectionView({ section, dm }: { section: MCPSectionDef; dm: bool
 
 // ── SimulationsView ───────────────────────────────────────────────────────────
 
-function SimulationsView({ section, dm }: { section: MCPSectionDef; dm: boolean }) {
+function SimulationsView({ section, dm, viewMode }: { section: MCPSectionDef; dm: boolean; viewMode: MCPViewMode }) {
   const [selectedWorkflow, setSelectedWorkflow] = useState(0);
   const [activeStep, setActiveStep] = useState(0);
 
   const workflow = mcpWorkflows[selectedWorkflow];
   const currentStep = workflow.steps[activeStep];
   const stepColor = ACTOR_COLORS[currentStep.actorType] ?? '#8b5cf6';
+  const showTechNote = viewMode === 'engineer' || viewMode === 'architect';
 
   const handleWorkflowSelect = (i: number) => {
     setSelectedWorkflow(i);
@@ -413,7 +617,10 @@ function SimulationsView({ section, dm }: { section: MCPSectionDef; dm: boolean 
   return (
     <div className="space-y-5">
       <div className={`rounded-xl p-5 border ${tw(dm, 'card')} ${tw(dm, 'border')}`}>
-        <DescriptionRenderer text={section.overview} dm={dm} />
+        {viewMode === 'beginner'
+          ? <BeginnerOverview text={section.overview} dm={dm} />
+          : <DescriptionRenderer text={section.overview} dm={dm} />
+        }
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -488,6 +695,18 @@ function SimulationsView({ section, dm }: { section: MCPSectionDef; dm: boolean 
               </div>
             </div>
             <p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{currentStep.detail}</p>
+            {showTechNote && (
+              <div className={`text-xs p-2.5 rounded-lg ${dm ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
+                <span className="font-bold" style={{ color: '#8b5cf6' }}>Protocol note:</span>{' '}
+                {currentStep.actorType === 'claude'
+                  ? 'Claude emits a tool_use content block; stop_reason may be "tool_use" if more steps follow.'
+                  : currentStep.actorType === 'mcp'
+                    ? 'MCP server validates input schema before executing. Returns tool_result with tool_use_id for correlation.'
+                    : currentStep.actorType === 'agent'
+                      ? 'Agent reads from shared state or prior tool results. Uses MCP to read/write its own context.'
+                      : 'This actor initiates or observes — no MCP protocol message emitted at this step.'}
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
 
@@ -558,7 +777,7 @@ export function MCPMasteryPage() {
           <div className={`text-xs font-bold uppercase tracking-wider mb-1.5 ${tw(dm, 'muted')}`}>
             Learning Mode
           </div>
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {(Object.keys(VIEW_MODE_META) as MCPViewMode[]).map(mode => {
               const meta = VIEW_MODE_META[mode];
               const isActive = mode === viewMode;
@@ -566,16 +785,19 @@ export function MCPMasteryPage() {
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
-                  className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition-all ${
+                  className={`w-full text-left px-2.5 py-2 rounded-lg transition-all ${
                     isActive
-                      ? 'text-white font-medium'
+                      ? 'text-white'
                       : dm
                         ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
                         : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
                   }`}
                   style={isActive ? { background: meta.color } : {}}
                 >
-                  {meta.label}
+                  <div className="text-xs font-bold">{meta.label}</div>
+                  <div className={`text-xs mt-0.5 leading-tight ${isActive ? 'text-white/70' : tw(dm, 'muted')}`}>
+                    {meta.description}
+                  </div>
                 </button>
               );
             })}
@@ -639,33 +861,33 @@ export function MCPMasteryPage() {
               <span>{SECTION_GROUP_META[selectedSection.group].emoji}</span>
               <span>{SECTION_GROUP_META[selectedSection.group].label}</span>
               <span className="opacity-50">·</span>
-              <span className={`font-medium ${tw(dm, 'muted')}`}>{modeMeta.description}</span>
+              <span className={tw(dm, 'muted')}>{modeMeta.description}</span>
             </div>
           </div>
 
-          {/* Section content */}
+          {/* Section content — key includes viewMode so it re-animates on mode change */}
           <AnimatePresence mode="wait">
             <motion.div
-              key={selectedSectionId}
+              key={`${selectedSectionId}-${viewMode}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
               {selectedSection.type === 'lifecycle' && (
-                <LifecycleSectionView section={selectedSection} dm={dm} />
+                <LifecycleSectionView section={selectedSection} dm={dm} viewMode={viewMode} />
               )}
               {selectedSection.type === 'servers' && (
-                <ServersSectionView section={selectedSection} dm={dm} />
+                <ServersSectionView section={selectedSection} dm={dm} viewMode={viewMode} />
               )}
               {selectedSection.type === 'security' && (
-                <SecuritySectionView section={selectedSection} dm={dm} />
+                <SecuritySectionView section={selectedSection} dm={dm} viewMode={viewMode} />
               )}
               {selectedSection.type === 'simulation' && (
-                <SimulationsView section={selectedSection} dm={dm} />
+                <SimulationsView section={selectedSection} dm={dm} viewMode={viewMode} />
               )}
               {selectedSection.type === 'standard' && (
-                <StandardSectionView section={selectedSection} dm={dm} />
+                <StandardSectionView section={selectedSection} dm={dm} viewMode={viewMode} />
               )}
             </motion.div>
           </AnimatePresence>
