@@ -15,11 +15,13 @@ import { CertificationPracticePage } from '@/pages/CertificationPracticePage';
 import { StudyMaterialsPage } from '@/pages/StudyMaterialsPage';
 import { ConnectorsPage } from '@/pages/ConnectorsPage';
 import { ArchitectureExplorerPage } from '@/pages/ArchitectureExplorerPage';
+import { ClaudeDesktopStudioPage } from '@/pages/ClaudeDesktopStudioPage';
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/studio" element={<ClaudeDesktopStudioPage />} />
         <Route element={<Layout />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/explorer" element={<ExplorerPage />} />
