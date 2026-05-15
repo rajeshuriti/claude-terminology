@@ -211,13 +211,13 @@ const MCP_FLOW_STEPS = [
 function MCPFlowPanel({ dm }: { dm: boolean }) {
   const [activeStep, setActiveStep] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [stepIdx, setStepIdx] = useState(-1);
+  const [flowIdx, setFlowIdx] = useState(-1);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!playing) return;
     timerRef.current = setInterval(() => {
-      setStepIdx(i => {
+      setFlowIdx(i => {
         if (i >= MCP_FLOW_STEPS.length - 1) { setPlaying(false); return i; }
         setActiveStep(MCP_FLOW_STEPS[i + 1].id);
         return i + 1;
@@ -226,7 +226,7 @@ function MCPFlowPanel({ dm }: { dm: boolean }) {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [playing]);
 
-  const reset = () => { setPlaying(false); setStepIdx(-1); setActiveStep(null); if (timerRef.current) clearInterval(timerRef.current); };
+  const reset = () => { setPlaying(false); setFlowIdx(-1); setActiveStep(null); if (timerRef.current) clearInterval(timerRef.current); };
   const currentStep = MCP_FLOW_STEPS.find(s => s.id === (activeStep ?? MCP_FLOW_STEPS[0].id));
 
   return (

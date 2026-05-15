@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronDown } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
 import type { CmdMode, CmdSectionId, CmdSectionGroup } from '@/data/commandCenterData';
 import {
