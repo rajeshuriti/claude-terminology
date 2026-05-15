@@ -26,9 +26,16 @@ const navItems = [
   { path: '/study', icon: null, label: 'Exam Study Guide', emoji: '📖', isNew: false },
   { path: '/connectors', icon: null, label: 'Connectors Hub', emoji: '🔌', isNew: false },
   { path: '/architecture', icon: null, label: 'Architecture Explorer', emoji: '🏗️', isNew: false },
-  { path: '/studio', icon: null, label: 'Claude Studio', emoji: '✺', isNew: false },
   { path: '/mcp-mastery', icon: null, label: 'MCP Mastery', emoji: '🔌', isNew: false },
-  { path: '/mcp-ecosystem', icon: null, label: 'Ecosystem Hub', emoji: '🌐', isNew: true },
+  { path: '/mcp-ecosystem', icon: null, label: 'Ecosystem Hub', emoji: '🌐', isNew: false },
+  { path: '/context-lab', icon: null, label: 'Context & Token Lab', emoji: '🧪', isNew: false },
+  { path: '/failure-lab', icon: null, label: 'AI Failure Lab', emoji: '🔥', isNew: false },
+  { path: '/cheat-sheets', icon: null, label: 'Claude Cheat Sheets', emoji: '⌨️', isNew: false },
+  { path: '/command-center', icon: null, label: 'Command Center', emoji: '⚡', isNew: true },
+];
+
+const devItems = [
+  { path: '/studio', icon: null, label: 'Claude Studio', emoji: '✺' },
 ];
 
 function SidebarContent({ onClose }: { onClose: () => void }) {
@@ -101,13 +108,19 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
                             ? 'bg-gradient-to-r from-cyan-500 to-sky-600 text-white shadow-sm'
                             : path === '/architecture'
                               ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-sm'
-                              : path === '/studio'
-                                ? 'bg-gradient-to-r from-amber-600 to-orange-500 text-white shadow-sm'
-                                : path === '/mcp-mastery'
+                              : path === '/mcp-mastery'
                                   ? 'bg-gradient-to-r from-pink-500 to-violet-600 text-white shadow-sm'
                                   : path === '/mcp-ecosystem'
                                     ? 'bg-gradient-to-r from-emerald-500 to-sky-500 text-white shadow-sm'
-                                    : 'bg-sky-500 text-white shadow-sm'
+                                    : path === '/context-lab'
+                                      ? 'bg-gradient-to-r from-sky-500 to-violet-600 text-white shadow-sm'
+                                      : path === '/failure-lab'
+                                        ? 'bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-sm'
+                                        : path === '/cheat-sheets'
+                                          ? 'bg-gradient-to-r from-sky-600 to-cyan-500 text-white shadow-sm'
+                                          : path === '/command-center'
+                                            ? 'bg-gradient-to-r from-violet-600 to-indigo-500 text-white shadow-sm'
+                                            : 'bg-sky-500 text-white shadow-sm'
                   : darkMode
                     ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -138,6 +151,27 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
             <span className="flex-1 truncate">{cat.name}</span>
             <ChevronRight size={12} className="opacity-50 shrink-0" />
           </button>
+        ))}
+        {/* Developer Tools */}
+        <div className={`text-xs font-semibold uppercase tracking-wider mt-4 mb-2 px-2 ${darkMode ? 'text-slate-600' : 'text-slate-300'}`}>Developer Tools</div>
+        {devItems.map(({ path, label, emoji }) => (
+          <NavLink
+            key={path}
+            to={path}
+            onClick={onClose}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                isActive
+                  ? 'bg-gradient-to-r from-amber-600 to-orange-500 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'
+                    : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+              }`
+            }
+          >
+            <span className="text-base leading-none">{emoji}</span>
+            {label}
+          </NavLink>
         ))}
       </div>
 

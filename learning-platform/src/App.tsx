@@ -18,6 +18,10 @@ import { ArchitectureExplorerPage } from '@/pages/ArchitectureExplorerPage';
 import { ClaudeDesktopStudioPage } from '@/pages/ClaudeDesktopStudioPage';
 import { MCPMasteryPage } from '@/pages/MCPMasteryPage';
 import { MCPEcosystemPage } from '@/pages/MCPEcosystemPage';
+import { ContextLabPage } from '@/pages/ContextLabPage';
+import { FailureLabPage } from '@/pages/FailureLabPage';
+import { CheatSheetPage } from '@/pages/CheatSheetPage';
+import { CommandCenterPage } from '@/pages/CommandCenterPage';
 
 export default function App() {
   return (
@@ -42,6 +46,10 @@ export default function App() {
           <Route path="/architecture" element={<ArchitectureExplorerPage />} />
           <Route path="/mcp-mastery" element={<MCPMasteryPage />} />
           <Route path="/mcp-ecosystem" element={<MCPEcosystemPage />} />
+          <Route path="/context-lab" element={<ContextLabPage />} />
+          <Route path="/failure-lab" element={<FailureLabPage />} />
+          <Route path="/cheat-sheets" element={<CheatSheetPage />} />
+          <Route path="/command-center" element={<CommandCenterPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
