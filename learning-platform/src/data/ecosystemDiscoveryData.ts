@@ -1079,18 +1079,18 @@ export const mcpInstallData: Record<string, McpInstallInfo> = {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github"],
       "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_yourTokenHere"
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_PAT_HERE"
       }
     }
   }
 }`,
-    claudeCodeCmd: 'claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN=ghp_xxx -- npx -y @modelcontextprotocol/server-github',
+    claudeCodeCmd: 'claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN=YOUR_PAT_HERE -- npx -y @modelcontextprotocol/server-github',
     envVars: [
       {
         name: 'GITHUB_PERSONAL_ACCESS_TOKEN',
         required: true,
         description: 'GitHub personal access token. Use a fine-grained token scoped to specific repos.',
-        example: 'ghp_xxxxxxxxxxxxxxxxxxxx',
+        example: 'github_pat_REPLACE_WITH_YOUR_TOKEN',
         howToGet: 'GitHub.com → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token. Select only the repos you need.',
         security: 'secret',
       },
@@ -1476,15 +1476,15 @@ export const mcpInstallData: Record<string, McpInstallInfo> = {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-slack"],
       "env": {
-        "SLACK_BOT_TOKEN": "xoxb-your-bot-token-here",
+        "SLACK_BOT_TOKEN": "YOUR_SLACK_BOT_TOKEN_HERE",
         "SLACK_TEAM_ID": "T0XXXXXXXXX"
       }
     }
   }
 }`,
-    claudeCodeCmd: 'claude mcp add slack -e SLACK_BOT_TOKEN=xoxb-... -e SLACK_TEAM_ID=T0XXXXXXX -- npx -y @modelcontextprotocol/server-slack',
+    claudeCodeCmd: 'claude mcp add slack -e SLACK_BOT_TOKEN=YOUR_BOT_TOKEN -e SLACK_TEAM_ID=T0XXXXXXX -- npx -y @modelcontextprotocol/server-slack',
     envVars: [
-      { name: 'SLACK_BOT_TOKEN', required: true, description: 'Slack Bot User OAuth token with channels:read and channels:history scopes.', example: 'xoxb-0000000000-0000000000000-xxxxxxxxxxxxxxxxxxxx', howToGet: 'api.slack.com/apps → Create New App → OAuth & Permissions → Bot Token Scopes: add channels:read, channels:history, users:read → Install to Workspace → copy Bot User OAuth Token.', security: 'secret' },
+      { name: 'SLACK_BOT_TOKEN', required: true, description: 'Slack Bot User OAuth token with channels:read and channels:history scopes. Real tokens start with xoxb-.', example: 'YOUR_SLACK_BOT_TOKEN_HERE', howToGet: 'api.slack.com/apps → Create New App → OAuth & Permissions → Bot Token Scopes: add channels:read, channels:history, users:read → Install to Workspace → copy Bot User OAuth Token.', security: 'secret' },
       { name: 'SLACK_TEAM_ID', required: true, description: 'Your Slack workspace ID.', example: 'T0XXXXXXX', howToGet: 'In Slack: right-click workspace name → Copy workspace ID. Or check your workspace URL: company.slack.com — the ID is shown in Admin → Workspace Settings.', security: 'config' },
     ],
     verifyPrompt: 'List the 5 most recently active public channels and show the last message from each.',
