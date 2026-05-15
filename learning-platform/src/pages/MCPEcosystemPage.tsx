@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
 import { tw } from '@/lib/dm';
 import {
   ecoServers, ecoWorkflows, evalCriteria,
-  ECO_CATEGORY_META, ECO_TIER_META,
+  ECO_CATEGORY_META, ECO_TIER_META, mcpInstallData,
 } from '@/data/ecosystemDiscoveryData';
 import type { EcoServer, EcoCategory, EcoTier } from '@/data/ecosystemDiscoveryData';
 import {
@@ -45,22 +46,31 @@ const TREND_LABELS: Record<string, { label: string; color: string }> = {
 // ── ── ── DISCOVER SECTION ── ── ──
 
 function ServerDetail({ server, dm, onClose }: { server: EcoServer; dm: boolean; onClose: () => void }) {
-  const [tab, setTab] = useState<'overview' | 'workflow' | 'security' | 'setup'>('overview');
+  const [tab, setTab] = useState<'overview' | 'workflow' | 'security' | 'install'>('overview');
+  const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
   const catMeta = ECO_CATEGORY_META[server.category];
   const tierMeta = ECO_TIER_META[server.tier];
   const READINESS_COLORS: Record<string, string> = {
     experimental: '#94a3b8', stable: '#0ea5e9', 'production-grade': '#10b981', enterprise: '#8b5cf6',
   };
+  const installInfo = mcpInstallData[server.id];
 
   const tabs = [
     { id: 'overview' as const,  label: '📖 Overview' },
     { id: 'workflow' as const,  label: '⚡ Workflow' },
     { id: 'security' as const,  label: '🛡️ Security' },
-    { id: 'setup' as const,     label: '⚙️ Setup' },
+    { id: 'install'  as const,  label: '⚙️ Install' },
   ];
+
+  const CONFIG_PATH: Record<string, string> = {
+    mac:   '~/Library/Application Support/Claude/claude_desktop_config.json',
+    win:   '%APPDATA%\\Claude\\claude_desktop_config.json',
+    linux: '~/.config/Claude/claude_desktop_config.json',
+  };
 
   return (
     <div className={`rounded-2xl border overflow-hidden ${tw(dm, 'card')} ${tw(dm, 'border')}`}>
+      {/* Header */}
       <div className="p-5" style={{ background: server.color + '18' }}>
         <div className="flex items-start gap-3">
           <span className="text-4xl shrink-0">{server.emoji}</span>
@@ -70,6 +80,7 @@ function ServerDetail({ server, dm, onClose }: { server: EcoServer; dm: boolean;
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span className="text-xs px-2.5 py-0.5 rounded-full font-bold" style={{ background: tierMeta.color + '20', color: tierMeta.color }}>{tierMeta.label}</span>
               <span className="text-xs px-2.5 py-0.5 rounded-full font-bold" style={{ background: catMeta.color + '20', color: catMeta.color }}>{catMeta.emoji} {catMeta.label}</span>
+              <span className="text-xs px-2 py-0.5 rounded-full font-bold capitalize" style={{ background: server.setup === 'easy' ? '#10b98120' : server.setup === 'moderate' ? '#f59e0b20' : '#ef444420', color: server.setup === 'easy' ? '#10b981' : server.setup === 'moderate' ? '#f59e0b' : '#ef4444' }}>{server.setup} setup</span>
               <span className="text-xs font-mono ml-auto" style={{ color: READINESS_COLORS[server.readiness] }}>★ {fmtStars(server.stars)}</span>
             </div>
           </div>
@@ -79,6 +90,8 @@ function ServerDetail({ server, dm, onClose }: { server: EcoServer; dm: boolean;
           {server.analogy}
         </div>
       </div>
+
+      {/* Tabs */}
       <div className={`flex border-b ${tw(dm, 'border')}`}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
@@ -88,9 +101,12 @@ function ServerDetail({ server, dm, onClose }: { server: EcoServer; dm: boolean;
           </button>
         ))}
       </div>
-      <div className="p-5 overflow-y-auto" style={{ maxHeight: 440 }}>
+
+      {/* Content */}
+      <div className="p-5 overflow-y-auto" style={{ maxHeight: 500 }}>
         <AnimatePresence mode="wait">
           <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
+
             {tab === 'overview' && (
               <div className="space-y-4">
                 <div><div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: server.color }}>What It Is</div><p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{server.whatItIs}</p></div>
@@ -109,6 +125,7 @@ function ServerDetail({ server, dm, onClose }: { server: EcoServer; dm: boolean;
                 </div>
               </div>
             )}
+
             {tab === 'workflow' && (
               <div className="relative">
                 <div className={`absolute left-4 top-4 bottom-4 w-0.5 ${dm ? 'bg-slate-700' : 'bg-slate-200'}`} />
@@ -128,6 +145,7 @@ function ServerDetail({ server, dm, onClose }: { server: EcoServer; dm: boolean;
                 </div>
               </div>
             )}
+
             {tab === 'security' && (
               <div className="space-y-4">
                 {server.securityRisks.map((r, i) => {
@@ -143,28 +161,139 @@ function ServerDetail({ server, dm, onClose }: { server: EcoServer; dm: boolean;
                 {server.commonMistakes.map((m, i) => <div key={i} className="flex gap-2 text-sm mb-1"><span style={{ color: '#f59e0b' }}>⚠</span><span className={tw(dm, 'body')}>{m}</span></div>)}
               </div>
             )}
-            {tab === 'setup' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: 'Setup',      value: server.setup,      color: server.setup === 'easy' ? '#10b981' : server.setup === 'moderate' ? '#f59e0b' : '#ef4444' },
-                    { label: 'Complexity', value: server.complexity, color: server.complexity === 'beginner' ? '#10b981' : server.complexity === 'intermediate' ? '#0ea5e9' : '#f59e0b' },
-                    { label: 'Readiness',  value: server.readiness,  color: READINESS_COLORS[server.readiness] },
-                  ].map(item => (
-                    <div key={item.label} className={`p-3 rounded-xl text-center ${dm ? 'bg-slate-800' : 'bg-slate-50'}`}>
-                      <div className={`text-xs ${tw(dm, 'muted')} mb-1`}>{item.label}</div>
-                      <div className="text-sm font-bold capitalize" style={{ color: item.color }}>{item.value}</div>
-                    </div>
-                  ))}
+
+            {tab === 'install' && installInfo && (
+              <div className="space-y-5">
+
+                {/* ① npx command */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-bold uppercase tracking-wider" style={{ color: server.color }}>① Quick Install</div>
+                    <CopyButton text={installInfo.npxCommand} dm={dm} />
+                  </div>
+                  <pre className="rounded-xl p-3 text-sm font-mono bg-slate-950 text-emerald-400 overflow-x-auto">{installInfo.npxCommand}</pre>
                 </div>
-                <div><div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: server.isOfficial ? '#10b981' : '#f59e0b' }}>Source</div>
-                  <div className={`flex items-center gap-2 text-sm p-3 rounded-xl ${dm ? 'bg-slate-800' : 'bg-slate-50'}`}>
-                    <span>{server.isOfficial ? '✅' : '🌐'}</span>
-                    <span className={tw(dm, 'body')}>{server.isOfficial ? 'Official Anthropic modelcontextprotocol/servers collection' : 'Community-maintained — review source before production use'}</span>
+
+                {/* ② Claude Desktop config */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="text-xs font-bold uppercase tracking-wider" style={{ color: '#8b5cf6' }}>② Claude Desktop Config</div>
+                    <CopyButton text={installInfo.claudeDesktopConfig} dm={dm} />
+                  </div>
+                  <div className={`text-xs mb-2 space-y-0.5 ${tw(dm, 'muted')}`}>
+                    {Object.entries(CONFIG_PATH).map(([os, path]) => (
+                      <div key={os} className="flex items-center gap-2">
+                        <span className="font-semibold capitalize">{os}:</span>
+                        <code className="font-mono text-xs">{path}</code>
+                        <CopyButton text={path} dm={dm} />
+                      </div>
+                    ))}
+                  </div>
+                  <pre className="rounded-xl p-3 text-xs font-mono bg-slate-950 text-violet-300 overflow-x-auto whitespace-pre">{installInfo.claudeDesktopConfig}</pre>
+                  <p className={`text-xs mt-1.5 ${tw(dm, 'muted')}`}>After editing: fully quit Claude Desktop (⌘Q / right-click taskbar → Quit) then relaunch.</p>
+                </div>
+
+                {/* ③ Claude Code CLI */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-bold uppercase tracking-wider" style={{ color: '#0ea5e9' }}>③ Claude Code CLI</div>
+                    <CopyButton text={installInfo.claudeCodeCmd} dm={dm} />
+                  </div>
+                  <pre className="rounded-xl p-3 text-xs font-mono bg-slate-950 text-sky-300 overflow-x-auto">{installInfo.claudeCodeCmd}</pre>
+                  <p className={`text-xs mt-1.5 ${tw(dm, 'muted')}`}>Run inside your project — adds the MCP to the local <code className="font-mono">.claude/</code> config.</p>
+                </div>
+
+                {/* ④ Environment variables */}
+                {installInfo.envVars.length > 0 && (
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#f59e0b' }}>④ Environment Variables</div>
+                    <div className="space-y-3">
+                      {installInfo.envVars.map((v) => (
+                        <div key={v.name} className={`rounded-xl border p-3 ${dm ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <code className="text-xs font-mono font-bold text-amber-400">{v.name}</code>
+                            <span className="text-xs px-1.5 py-0.5 rounded font-bold" style={{ background: v.required ? '#ef444420' : '#64748b20', color: v.required ? '#ef4444' : '#64748b' }}>{v.required ? 'Required' : 'Optional'}</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded font-bold" style={{ background: v.security === 'secret' ? '#f97316' + '20' : '#0ea5e920', color: v.security === 'secret' ? '#f97316' : '#0ea5e9' }}>{v.security === 'secret' ? '🔐 Secret' : '⚙️ Config'}</span>
+                          </div>
+                          <p className={`text-xs mb-1.5 ${tw(dm, 'body')}`}>{v.description}</p>
+                          <div className="flex items-center gap-2">
+                            <code className={`text-xs font-mono flex-1 px-2 py-1 rounded ${dm ? 'bg-slate-900 text-emerald-400' : 'bg-white text-emerald-700 border border-slate-200'}`}>{v.example}</code>
+                            <CopyButton text={v.example} dm={dm} />
+                          </div>
+                          <p className={`text-xs mt-1.5 ${tw(dm, 'muted')}`}>📍 {v.howToGet}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ⑤ Verify */}
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#10b981' }}>⑤ Verify It Works</div>
+                  <div className={`rounded-xl p-3 text-xs font-mono mb-2 ${dm ? 'bg-slate-800' : 'bg-slate-50'} border ${tw(dm, 'border')}`}>
+                    <div className={`text-xs font-semibold mb-1 ${tw(dm, 'muted')}`}>Check MCP is connected:</div>
+                    <div className="flex items-center gap-2">
+                      <code className="text-emerald-400 flex-1">claude mcp list</code>
+                      <CopyButton text="claude mcp list" dm={dm} />
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CopyButton text={installInfo.verifyPrompt} dm={dm} />
+                    <div className={`flex-1 rounded-xl p-3 text-sm italic border ${dm ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`} style={{ borderLeft: `3px solid ${server.color}` }}>
+                      "{installInfo.verifyPrompt}"
+                    </div>
                   </div>
                 </div>
+
+                {/* ⑥ Troubleshooting */}
+                {installInfo.troubleshooting.length > 0 && (
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#ef4444' }}>⑥ Troubleshooting</div>
+                    <div className="space-y-2">
+                      {installInfo.troubleshooting.map((item, i) => (
+                        <div key={i} className={`rounded-xl border overflow-hidden ${tw(dm, 'border')}`}>
+                          <button onClick={() => setExpandedIssue(expandedIssue === i ? null : i)}
+                            className={`w-full text-left flex items-center gap-2 px-3 py-2.5 ${tw(dm, 'card')}`}>
+                            <span className="text-red-500 shrink-0">⚠</span>
+                            <span className={`flex-1 text-xs font-semibold ${tw(dm, 'body')}`}>{item.symptom}</span>
+                            <ChevronDown size={12} className={`transition-transform shrink-0 ${tw(dm, 'muted')} ${expandedIssue === i ? 'rotate-180' : ''}`} />
+                          </button>
+                          {expandedIssue === i && (
+                            <div className={`border-t ${tw(dm, 'border')} p-3 space-y-2 ${tw(dm, 'cardAlt')}`}>
+                              <div className="text-xs"><span className={`font-semibold ${tw(dm, 'muted')}`}>Cause: </span><span className={tw(dm, 'body')}>{item.cause}</span></div>
+                              <div className="flex items-start gap-2">
+                                <span className="text-emerald-500 shrink-0 text-xs font-bold mt-0.5">→ Fix:</span>
+                                <span className={`text-xs ${tw(dm, 'body')}`}>{item.fix}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Deployment note */}
+                <div className={`rounded-xl p-3 text-xs ${dm ? 'bg-slate-800/60' : 'bg-slate-50'} border ${tw(dm, 'border')}`}>
+                  <span className="font-bold" style={{ color: server.color }}>🚀 Deployment: </span>
+                  <span className={tw(dm, 'body')}>{installInfo.deploymentNote}</span>
+                </div>
+
+                {/* Source badge */}
+                <div className={`flex items-center gap-2 text-xs p-2.5 rounded-xl ${dm ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                  <span>{server.isOfficial ? '✅' : '🌐'}</span>
+                  <span className={tw(dm, 'body')}>{server.isOfficial ? 'Official Anthropic modelcontextprotocol/servers — maintained by Anthropic.' : 'Community-maintained — audit the source before production deployment.'}</span>
+                </div>
+
               </div>
             )}
+
+            {tab === 'install' && !installInfo && (
+              <div className={`text-center py-8 text-sm ${tw(dm, 'muted')}`}>
+                Install guide coming soon for {server.name}.
+              </div>
+            )}
+
           </motion.div>
         </AnimatePresence>
       </div>
@@ -273,10 +402,33 @@ function DiscoverSection({ dm }: { dm: boolean }) {
 
 // ── ── ── SKILLS SECTION ── ── ──
 
+function CopyButton({ text, dm }: { text: string; dm: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); });
+  };
+  return (
+    <button onClick={copy}
+      className={`text-xs px-2 py-0.5 rounded font-bold transition-all ${copied ? 'bg-emerald-500 text-white' : dm ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+      {copied ? '✓ Copied' : 'Copy'}
+    </button>
+  );
+}
+
 function SkillDetail({ skill, dm, onClose }: { skill: AISkill; dm: boolean; onClose: () => void }) {
+  const [tab, setTab] = useState<'overview' | 'install' | 'skill-md'>('overview');
   const catMeta = SKILL_CATEGORY_META[skill.category];
+  const info = skill.installInfo;
+
+  const tabs = [
+    { id: 'overview' as const, label: '📖 Overview' },
+    { id: 'install'  as const, label: '⚙️ Install' },
+    { id: 'skill-md' as const, label: '📄 SKILL.md' },
+  ];
+
   return (
     <div className={`rounded-2xl border overflow-hidden ${tw(dm, 'card')} ${tw(dm, 'border')}`}>
+      {/* Header */}
       <div className="p-5" style={{ background: skill.color + '18' }}>
         <div className="flex items-start gap-3">
           <span className="text-4xl">{skill.emoji}</span>
@@ -295,23 +447,124 @@ function SkillDetail({ skill, dm, onClose }: { skill: AISkill; dm: boolean; onCl
           {skill.analogy}
         </div>
       </div>
-      <div className="p-5 overflow-y-auto space-y-5" style={{ maxHeight: 480 }}>
-        <div><div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: skill.color }}>What It Is</div><p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{skill.whatItIs}</p></div>
-        <div><div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#8b5cf6' }}>Why It Matters</div><p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{skill.whyItMatters}</p></div>
-        <div>
-          <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#10b981' }}>Use Cases</div>
-          {skill.useCases.map((u, i) => <div key={i} className="flex gap-2 text-sm mb-1"><span style={{ color: '#10b981' }} className="shrink-0 mt-0.5">→</span><span className={tw(dm, 'body')}>{u}</span></div>)}
-        </div>
-        <div>
-          <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#0ea5e9' }}>SKILL.md — Install This Expertise</div>
-          <pre className="rounded-xl p-4 text-xs font-mono overflow-x-auto bg-slate-950 text-emerald-300 leading-relaxed whitespace-pre-wrap">{skill.skillMd}</pre>
-        </div>
-        <div>
-          <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#f59e0b' }}>Tags</div>
-          <div className="flex flex-wrap gap-2">
-            {skill.tags.map(t => <span key={t} className={`text-xs px-2 py-0.5 rounded-full ${dm ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>#{t}</span>)}
-          </div>
-        </div>
+
+      {/* Tabs */}
+      <div className={`flex border-b ${tw(dm, 'border')}`}>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex-1 py-2 text-xs font-medium transition-all border-b-2 ${tab === t.id ? 'font-bold' : dm ? 'border-transparent text-slate-400 hover:text-slate-200' : 'border-transparent text-slate-400 hover:text-slate-700'}`}
+            style={tab === t.id ? { color: skill.color, borderColor: skill.color } : {}}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      <div className="p-5 overflow-y-auto" style={{ maxHeight: 500 }}>
+        <AnimatePresence mode="wait">
+          <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
+
+            {tab === 'overview' && (
+              <div className="space-y-5">
+                <div><div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: skill.color }}>What It Is</div><p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{skill.whatItIs}</p></div>
+                <div><div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#8b5cf6' }}>Why It Matters</div><p className={`text-sm leading-relaxed ${tw(dm, 'body')}`}>{skill.whyItMatters}</p></div>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#10b981' }}>Use Cases</div>
+                  {skill.useCases.map((u, i) => <div key={i} className="flex gap-2 text-sm mb-1.5"><span style={{ color: '#10b981' }} className="shrink-0 mt-0.5">→</span><span className={tw(dm, 'body')}>{u}</span></div>)}
+                </div>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#f59e0b' }}>Tags</div>
+                  <div className="flex flex-wrap gap-2">
+                    {skill.tags.map(t => <span key={t} className={`text-xs px-2 py-0.5 rounded-full ${dm ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>#{t}</span>)}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {tab === 'install' && (
+              <div className="space-y-5">
+                {/* Step 1 — npx install */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-bold uppercase tracking-wider" style={{ color: skill.color }}>① Install via npx</div>
+                    <CopyButton text={info.npxCmd} dm={dm} />
+                  </div>
+                  <pre className="rounded-xl p-3 text-sm font-mono bg-slate-950 text-emerald-400 overflow-x-auto">{info.npxCmd}</pre>
+                  <p className={`text-xs mt-1.5 ${tw(dm, 'muted')}`}>Creates <code className="font-mono">{info.creates}</code> in your project.</p>
+                </div>
+
+                {/* Step 2 — CLAUDE.md */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-bold uppercase tracking-wider" style={{ color: '#8b5cf6' }}>② Add to CLAUDE.md</div>
+                    <CopyButton text={info.claudeMdSnippet} dm={dm} />
+                  </div>
+                  <pre className="rounded-xl p-3 text-xs font-mono bg-slate-950 text-violet-300 overflow-x-auto whitespace-pre-wrap">{info.claudeMdSnippet}</pre>
+                  <p className={`text-xs mt-1.5 ${tw(dm, 'muted')}`}>Claude reads CLAUDE.md on every session start — the skill activates automatically.</p>
+                </div>
+
+                {/* Step 3 — First prompt */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-bold uppercase tracking-wider" style={{ color: '#10b981' }}>③ Try This First Prompt</div>
+                    <CopyButton text={info.firstPrompt} dm={dm} />
+                  </div>
+                  <div className={`rounded-xl p-3 text-sm italic border ${dm ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'}`} style={{ borderLeft: `3px solid ${skill.color}` }}>
+                    "{info.firstPrompt}"
+                  </div>
+                </div>
+
+                {/* Requirements */}
+                {((info.requiresMcp && info.requiresMcp.length > 0) || (info.requiresPackages && info.requiresPackages.length > 0)) && (
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#f59e0b' }}>Requirements</div>
+                    <div className="space-y-2">
+                      {info.requiresMcp && info.requiresMcp.length > 0 && (
+                        <div className={`rounded-xl p-3 text-xs ${dm ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                          <div className="font-bold text-violet-400 mb-1.5">MCP Servers needed</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {info.requiresMcp.map(mcp => (
+                              <span key={mcp} className="px-2 py-0.5 rounded font-mono font-bold" style={{ background: '#8b5cf620', color: '#a78bfa' }}>{mcp}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {info.requiresPackages && info.requiresPackages.length > 0 && (
+                        <div className={`rounded-xl p-3 text-xs ${dm ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                          <div className="font-bold text-sky-400 mb-1.5">npm packages</div>
+                          <div className="flex items-center gap-2">
+                            <pre className="flex-1 text-emerald-400 font-mono overflow-x-auto">{`npm install ${info.requiresPackages.join(' ')}`}</pre>
+                            <CopyButton text={`npm install ${info.requiresPackages.join(' ')}`} dm={dm} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes */}
+                {info.notes && (
+                  <div className={`rounded-xl p-3 text-xs ${dm ? 'bg-amber-950/30' : 'bg-amber-50'}`} style={{ borderLeft: '3px solid #f59e0b' }}>
+                    <div className="font-bold text-amber-500 mb-1">💡 Setup Notes</div>
+                    <p className={tw(dm, 'body')}>{info.notes}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {tab === 'skill-md' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-bold uppercase tracking-wider" style={{ color: '#0ea5e9' }}>SKILL.md Content</div>
+                  <CopyButton text={skill.skillMd} dm={dm} />
+                </div>
+                <p className={`text-xs ${tw(dm, 'muted')}`}>Written to <code className="font-mono">{info.creates}</code> — or paste directly into any CLAUDE.md to activate inline.</p>
+                <pre className="rounded-xl p-4 text-xs font-mono overflow-x-auto bg-slate-950 text-emerald-300 leading-relaxed whitespace-pre-wrap">{skill.skillMd}</pre>
+              </div>
+            )}
+
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -353,7 +606,7 @@ function SkillsSection({ dm }: { dm: boolean }) {
             <button key={id} onClick={() => setCatFilter(catFilter === id ? 'all' : id)} className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${catFilter === id ? 'text-white' : dm ? 'bg-slate-800 text-slate-400 hover:text-white' : 'bg-slate-100 text-slate-500 hover:text-slate-800'}`} style={catFilter === id ? { background: meta.color } : {}}>{meta.emoji} {meta.label}</button>
           ))}
         </div>
-        <div className={`text-xs mb-3 ${tw(dm, 'muted')}`}>{filtered.length} skills · click any skill to view SKILL.md installation content</div>
+        <div className={`text-xs mb-3 ${tw(dm, 'muted')}`}>{filtered.length} skills · click any skill for npx install command, CLAUDE.md snippet, and first prompt</div>
         <div className={`grid gap-3 ${selectedSkill ? 'grid-cols-1' : 'grid-cols-2 xl:grid-cols-3'}`}>
           {filtered.map(skill => {
             const catMeta = SKILL_CATEGORY_META[skill.category];

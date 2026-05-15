@@ -1016,3 +1016,576 @@ export const evalCriteria: EcoEvalCriteria[] = [
     weight: 'important',
   },
 ];
+
+// ── MCP Installation Data ─────────────────────────────────────────────────────
+
+export interface McpEnvVar {
+  name: string;
+  required: boolean;
+  description: string;
+  example: string;
+  howToGet: string;
+  security: 'secret' | 'config';
+}
+
+export interface McpTroubleshootItem {
+  symptom: string;
+  cause: string;
+  fix: string;
+}
+
+export interface McpInstallInfo {
+  npxCommand: string;
+  claudeDesktopConfig: string;
+  claudeCodeCmd: string;
+  envVars: McpEnvVar[];
+  verifyPrompt: string;
+  troubleshooting: McpTroubleshootItem[];
+  deploymentNote: string;
+}
+
+export const mcpInstallData: Record<string, McpInstallInfo> = {
+
+  filesystem: {
+    npxCommand: 'npx -y @modelcontextprotocol/server-filesystem /path/to/allowed/dir',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/you/projects"
+      ]
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add filesystem -- npx -y @modelcontextprotocol/server-filesystem ~/projects',
+    envVars: [],
+    verifyPrompt: 'List all files in my project directory and summarize the structure.',
+    troubleshooting: [
+      { symptom: 'Permission denied on read', cause: 'Path not inside allowed directories', fix: 'Change the path argument in args to match the directory you want to expose. Restart Claude Desktop after editing.' },
+      { symptom: 'MCP not listed after claude mcp list', cause: 'Incorrect command path or JSON syntax error in config', fix: 'Test standalone: npx -y @modelcontextprotocol/server-filesystem ~/projects — if it hangs waiting for input, the install is working.' },
+      { symptom: 'Claude reads sensitive files (.env, .ssh)', cause: 'Allowed directory is too broad (home dir ~)', fix: 'Scope allowed path to just the project folder, e.g. ~/projects/my-app — never allow the entire home directory.' },
+    ],
+    deploymentNote: 'Runs as a local stdio process. Only exposes directories you explicitly list in args. Never pass ~ or / as the allowed path.',
+  },
+
+  github: {
+    npxCommand: 'npx -y @modelcontextprotocol/server-github',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_yourTokenHere"
+      }
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN=ghp_xxx -- npx -y @modelcontextprotocol/server-github',
+    envVars: [
+      {
+        name: 'GITHUB_PERSONAL_ACCESS_TOKEN',
+        required: true,
+        description: 'GitHub personal access token. Use a fine-grained token scoped to specific repos.',
+        example: 'ghp_xxxxxxxxxxxxxxxxxxxx',
+        howToGet: 'GitHub.com → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token. Select only the repos you need.',
+        security: 'secret',
+      },
+    ],
+    verifyPrompt: 'List the open issues in the repository anthropics/anthropic-sdk-python',
+    troubleshooting: [
+      { symptom: '401 Unauthorized', cause: 'Invalid or expired token', fix: 'Regenerate token at github.com/settings/tokens and update the env var in your config file. Restart Claude Desktop.' },
+      { symptom: '403 on private repos', cause: 'Fine-grained token scope excludes the repo', fix: 'Edit the token on GitHub and add the specific private repo to its repository access list.' },
+      { symptom: 'Rate limit hit quickly', cause: 'Code search calls consume high GitHub API quota', fix: 'Add --max-search-results 10 to args to limit search result volume per call.' },
+    ],
+    deploymentNote: 'Use fine-grained tokens scoped to specific repos only. Never use a classic token with full repo scope — it grants read/write access to all your private repos.',
+  },
+
+  postgres: {
+    npxCommand: 'npx -y @modelcontextprotocol/server-postgres "postgresql://user:pass@localhost/mydb"',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://readonly_user:password@localhost:5432/mydb"
+      ]
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add postgres -- npx -y @modelcontextprotocol/server-postgres "postgresql://readonly:pass@localhost/mydb"',
+    envVars: [
+      {
+        name: 'Connection string (in args)',
+        required: true,
+        description: 'PostgreSQL connection URL — embed directly in args, not as an env var.',
+        example: 'postgresql://readonly_user:password@localhost:5432/analytics_db',
+        howToGet: 'Create a read-only DB user: CREATE USER claude_readonly WITH PASSWORD \'...\'; GRANT SELECT ON ALL TABLES IN SCHEMA public TO claude_readonly;',
+        security: 'secret',
+      },
+    ],
+    verifyPrompt: 'What tables exist in the database? Describe the schema of the users table.',
+    troubleshooting: [
+      { symptom: 'Connection refused (port 5432)', cause: 'PostgreSQL not running or wrong host', fix: 'Test connectivity: psql "postgresql://user:pass@localhost/mydb" — if it fails, check pg_ctl status or Docker is running.' },
+      { symptom: 'Authentication failed', cause: 'Wrong username, password, or database name in URL', fix: 'URL format is: postgresql://username:password@host:port/database — verify each component matches your DB setup.' },
+      { symptom: 'SSL required', cause: 'Production DB requires SSL', fix: 'Append ?sslmode=require to connection string: postgresql://user:pass@host/db?sslmode=require' },
+    ],
+    deploymentNote: 'Always use a dedicated read-only database user. Never use superuser or app user credentials — a single injected query could modify production data.',
+  },
+
+  git: {
+    npxCommand: 'npx -y @modelcontextprotocol/server-git',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "git": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git"]
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add git -- npx -y @modelcontextprotocol/server-git',
+    envVars: [],
+    verifyPrompt: 'Show me the last 10 commits in this repository with their messages and authors.',
+    troubleshooting: [
+      { symptom: 'Not a git repository error', cause: 'Claude Desktop launched from outside a git repo', fix: 'The server operates on the working directory. Launch Claude from inside your project directory, or specify --repository /path/to/repo in args.' },
+      { symptom: 'Git command not found', cause: 'Git not installed or not in PATH', fix: 'Install git: brew install git (macOS) or apt install git (Linux). Verify: git --version.' },
+    ],
+    deploymentNote: 'Read-only access to local git history. No write operations (commit, push, branch). Works on whichever repo directory Claude was launched from.',
+  },
+
+  'playwright-mcp': {
+    npxCommand: 'npx @playwright/mcp@latest',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add playwright -- npx @playwright/mcp@latest',
+    envVars: [],
+    verifyPrompt: 'Navigate to https://example.com, take a screenshot, and describe what you see.',
+    troubleshooting: [
+      { symptom: 'Browser not launching / executable not found', cause: 'Playwright browsers not installed', fix: 'Run: npx playwright install chromium — this downloads the browser binaries (~150MB). Run once per machine.' },
+      { symptom: 'Navigation timeout', cause: 'Slow page load or network issues', fix: 'The default timeout is 30s. For slow sites, add {"timeout": 60000} to the page navigation call.' },
+      { symptom: 'Page content returns empty', cause: 'JavaScript-rendered app needs time to hydrate', fix: 'Add waitUntil: "networkidle" option in navigation to wait for JS rendering to complete.' },
+    ],
+    deploymentNote: 'Requires Playwright browsers installed locally (npx playwright install). Runs a real Chromium browser — keep browser profile isolated to prevent session bleed-over.',
+  },
+
+  hyperbrowser: {
+    npxCommand: 'npx @hyperbrowserai/mcp',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "hyperbrowser": {
+      "command": "npx",
+      "args": ["@hyperbrowserai/mcp"],
+      "env": {
+        "HYPERBROWSER_API_KEY": "hb_yourApiKeyHere"
+      }
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add hyperbrowser -e HYPERBROWSER_API_KEY=hb_xxx -- npx @hyperbrowserai/mcp',
+    envVars: [
+      {
+        name: 'HYPERBROWSER_API_KEY',
+        required: true,
+        description: 'API key for Hyperbrowser cloud browser sessions.',
+        example: 'hb_xxxxxxxxxxxxxxxxxxxx',
+        howToGet: 'Sign up at app.hyperbrowser.ai → Dashboard → API Keys → Create new key.',
+        security: 'secret',
+      },
+    ],
+    verifyPrompt: 'Start a browser session and navigate to https://example.com — tell me the page title and first paragraph.',
+    troubleshooting: [
+      { symptom: '401 Unauthorized', cause: 'Invalid API key', fix: 'Verify your key at app.hyperbrowser.ai. Keys are prefixed with hb_.' },
+      { symptom: 'Session quota exceeded', cause: 'Monthly session limit reached on free tier', fix: 'Upgrade plan at hyperbrowser.ai or reduce concurrent session count.' },
+    ],
+    deploymentNote: 'Cloud-hosted browsers — no local browser install needed. Billed per session. Add rate limiting in agent loops to prevent runaway session costs.',
+  },
+
+  firecrawl: {
+    npxCommand: 'npx firecrawl-mcp',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "firecrawl": {
+      "command": "npx",
+      "args": ["firecrawl-mcp"],
+      "env": {
+        "FIRECRAWL_API_KEY": "fc-yourApiKeyHere"
+      }
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add firecrawl -e FIRECRAWL_API_KEY=fc-xxx -- npx firecrawl-mcp',
+    envVars: [
+      {
+        name: 'FIRECRAWL_API_KEY',
+        required: true,
+        description: 'Firecrawl API key. Free tier: 500 credits/month.',
+        example: 'fc-xxxxxxxxxxxxxxxxxxxxxxxx',
+        howToGet: 'Sign up at firecrawl.dev → dashboard → API Keys → copy your key.',
+        security: 'secret',
+      },
+    ],
+    verifyPrompt: 'Scrape https://docs.anthropic.com/en/docs/intro-to-claude and give me a structured summary of the key sections.',
+    troubleshooting: [
+      { symptom: 'Empty content returned', cause: 'JavaScript-rendered page not fully loaded', fix: 'Add "formats": ["markdown"] to the scrape options — this triggers Firecrawl\'s JS rendering pipeline.' },
+      { symptom: '402 Payment Required', cause: 'Free tier credits exhausted', fix: 'Check credit balance at firecrawl.dev/dashboard. Use scrape (1 credit) instead of crawl (1 credit/page) to conserve.' },
+      { symptom: 'Prompt injection in results', cause: 'Scraped page contains adversarial instructions', fix: 'Always wrap firecrawl results in XML tags: <scraped_content>...</scraped_content> before passing to Claude.' },
+    ],
+    deploymentNote: 'Cloud extraction service. Credits consumed per page. Watch costs on deep crawl operations — limit crawl depth and page count explicitly.',
+  },
+
+  'brave-search': {
+    npxCommand: 'npx -y @modelcontextprotocol/server-brave-search',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "BSA_yourApiKeyHere"
+      }
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add brave-search -e BRAVE_API_KEY=BSA_xxx -- npx -y @modelcontextprotocol/server-brave-search',
+    envVars: [
+      {
+        name: 'BRAVE_API_KEY',
+        required: true,
+        description: 'Brave Search API key. Free tier: 2,000 queries/month.',
+        example: 'BSAxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        howToGet: 'Go to brave.com/search/api → Get Started → create account → API Keys → generate key. Keys start with BSA.',
+        security: 'secret',
+      },
+    ],
+    verifyPrompt: 'Search for "Model Context Protocol latest updates 2025" and summarize the top 3 results.',
+    troubleshooting: [
+      { symptom: 'Invalid API key / 401', cause: 'Key format wrong or not activated', fix: 'Keys start with "BSA" — verify at api.search.brave.com. New keys may take a few minutes to activate.' },
+      { symptom: 'Quota exceeded / 429', cause: 'Monthly free tier limit reached', fix: 'Free tier: 2,000 queries/month. Upgrade plan or wait for monthly reset.' },
+    ],
+    deploymentNote: 'Cloud search API. Unfiltered, non-personalized results. Free tier sufficient for development; upgrade for production agent use.',
+  },
+
+  tavily: {
+    npxCommand: 'npx tavily-mcp',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "tavily": {
+      "command": "npx",
+      "args": ["tavily-mcp"],
+      "env": {
+        "TAVILY_API_KEY": "tvly-yourApiKeyHere"
+      }
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add tavily -e TAVILY_API_KEY=tvly-xxx -- npx tavily-mcp',
+    envVars: [
+      {
+        name: 'TAVILY_API_KEY',
+        required: true,
+        description: 'Tavily API key. Free tier: 1,000 credits/month.',
+        example: 'tvly-xxxxxxxxxxxxxxxxxxxxxxxx',
+        howToGet: 'Sign up at tavily.com → dashboard → API Keys → generate key. Keys start with tvly-.',
+        security: 'secret',
+      },
+    ],
+    verifyPrompt: 'Search for peer-reviewed papers on LLM hallucination mitigation published in 2024.',
+    troubleshooting: [
+      { symptom: '401 / Invalid API key', cause: 'Key not set or wrong format', fix: 'Keys start with tvly-. Verify at app.tavily.com/home.' },
+      { symptom: 'Credits depleted', cause: 'Free tier limit hit', fix: 'Use search_depth: "basic" (1 credit) instead of "advanced" (2 credits) to conserve.' },
+    ],
+    deploymentNote: 'AI-optimized search — results pre-cleaned for LLM ingestion. Free tier (1,000 credits/month) covers development. Results cite sources automatically.',
+  },
+
+  chroma: {
+    npxCommand: 'npx chroma-mcp --host localhost --port 8000',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "chroma": {
+      "command": "npx",
+      "args": ["chroma-mcp", "--host", "localhost", "--port", "8000"]
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add chroma -- npx chroma-mcp --host localhost --port 8000',
+    envVars: [
+      {
+        name: 'ChromaDB server (separate process)',
+        required: true,
+        description: 'ChromaDB must be running before connecting. Start with Docker or pip.',
+        example: 'docker run -p 8000:8000 chromadb/chroma',
+        howToGet: 'Option 1 — Docker: docker run -p 8000:8000 chromadb/chroma | Option 2 — pip: pip install chromadb && chroma run --path ./chroma-data',
+        security: 'config',
+      },
+    ],
+    verifyPrompt: 'List the available vector collections and tell me how many documents are in each.',
+    troubleshooting: [
+      { symptom: 'Connection refused on port 8000', cause: 'ChromaDB not running', fix: 'Start ChromaDB first: docker run -p 8000:8000 chromadb/chroma — wait for "Application startup complete" before using.' },
+      { symptom: 'Collection not found', cause: 'Empty database or wrong collection name', fix: 'Collections must be created before querying. Use: client.create_collection("my-docs") in Python first.' },
+    ],
+    deploymentNote: 'ChromaDB runs as a separate service (Docker or pip). The MCP server connects to it via HTTP. For production, use persistent storage: docker run -v ./data:/chroma/chroma -p 8000:8000 chromadb/chroma.',
+  },
+
+  memory: {
+    npxCommand: 'npx -y @modelcontextprotocol/server-memory',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add memory -- npx -y @modelcontextprotocol/server-memory',
+    envVars: [],
+    verifyPrompt: 'Remember that my preferred programming language is TypeScript and I work at Acme Corp. Now tell me what you know about me.',
+    troubleshooting: [
+      { symptom: 'Memory lost between Claude Desktop sessions', cause: 'Default is in-process memory (not persisted)', fix: 'Add --path ~/.claude/memory to persist to disk: "args": ["-y", "@modelcontextprotocol/server-memory", "--path", "~/.claude/memory"]' },
+    ],
+    deploymentNote: 'Zero external dependencies. Memory persists within a session. Add --path flag for cross-session persistence to a JSON file on disk.',
+  },
+
+  redis: {
+    npxCommand: 'npx @modelcontextprotocol/server-redis --redis-url redis://localhost:6379',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "redis": {
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-redis",
+        "--redis-url",
+        "redis://localhost:6379"
+      ]
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add redis -- npx @modelcontextprotocol/server-redis --redis-url redis://localhost:6379',
+    envVars: [
+      {
+        name: 'Redis server (separate process)',
+        required: true,
+        description: 'Redis must be running before connecting.',
+        example: 'redis://localhost:6379',
+        howToGet: 'Option 1 — Docker: docker run -p 6379:6379 redis | Option 2 — macOS: brew install redis && brew services start redis | Option 3 — Managed: upstash.com (free tier)',
+        security: 'config',
+      },
+    ],
+    verifyPrompt: 'Set a key "test:mcp" with value "working" and an expiry of 60 seconds, then retrieve it.',
+    troubleshooting: [
+      { symptom: 'Connection refused on 6379', cause: 'Redis not running', fix: 'Start Redis: docker run -p 6379:6379 redis (simplest) or brew services start redis (macOS).' },
+      { symptom: 'NOAUTH Authentication required', cause: 'Redis requires password but none provided', fix: 'Add password to URL: redis://:password@localhost:6379' },
+    ],
+    deploymentNote: 'Requires Redis running separately. For zero-config cloud Redis, use Upstash (upstash.com) — free tier: 10,000 commands/day.',
+  },
+
+  docker: {
+    npxCommand: 'npx @modelcontextprotocol/server-docker',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "docker": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-docker"]
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add docker -- npx @modelcontextprotocol/server-docker',
+    envVars: [],
+    verifyPrompt: 'List all running Docker containers and tell me their names, images, and uptime.',
+    troubleshooting: [
+      { symptom: 'Cannot connect to Docker daemon', cause: 'Docker Desktop not running', fix: 'Start Docker Desktop (macOS/Windows) or: sudo systemctl start docker (Linux).' },
+      { symptom: 'Permission denied on /var/run/docker.sock', cause: 'Current user not in docker group', fix: 'Run: sudo usermod -aG docker $USER then log out and back in. Or run with sudo (not recommended).' },
+    ],
+    deploymentNote: 'Grants full Docker daemon access — treat with the same care as root access. Use read-only Docker API endpoints where possible. Never run in production without explicit allow-lists.',
+  },
+
+  'aws-kb': {
+    npxCommand: 'npx -y @modelcontextprotocol/server-aws-kb-retrieval',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "aws-kb": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-aws-kb-retrieval"],
+      "env": {
+        "AWS_ACCESS_KEY_ID": "AKIAIOSFODNN7EXAMPLE",
+        "AWS_SECRET_ACCESS_KEY": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        "AWS_REGION": "us-east-1",
+        "BEDROCK_KB_ID": "KBXXXXXXXXXXXXXXX"
+      }
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add aws-kb -e AWS_ACCESS_KEY_ID=AKIA... -e AWS_SECRET_ACCESS_KEY=... -e AWS_REGION=us-east-1 -e BEDROCK_KB_ID=KB... -- npx -y @modelcontextprotocol/server-aws-kb-retrieval',
+    envVars: [
+      { name: 'AWS_ACCESS_KEY_ID', required: true, description: 'IAM access key with Bedrock read permissions.', example: 'AKIAIOSFODNN7EXAMPLE', howToGet: 'AWS Console → IAM → Users → your user → Security credentials → Create access key. Attach AmazonBedrockReadOnlyAccess policy.', security: 'secret' },
+      { name: 'AWS_SECRET_ACCESS_KEY', required: true, description: 'IAM secret key (generated with access key).', example: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY', howToGet: 'Generated alongside Access Key ID — save it immediately as AWS only shows it once.', security: 'secret' },
+      { name: 'AWS_REGION', required: true, description: 'AWS region where your Bedrock Knowledge Base is deployed.', example: 'us-east-1', howToGet: 'Check your Bedrock Knowledge Base region in the AWS Console URL or resource details.', security: 'config' },
+      { name: 'BEDROCK_KB_ID', required: true, description: 'Amazon Bedrock Knowledge Base ID.', example: 'KBXXXXXXXXXXXXXXXX', howToGet: 'AWS Console → Amazon Bedrock → Knowledge bases → select your KB → copy the Knowledge base ID from the overview page.', security: 'config' },
+    ],
+    verifyPrompt: 'Search the knowledge base for documents about our product authentication flow.',
+    troubleshooting: [
+      { symptom: 'AccessDeniedException', cause: 'IAM user lacks Bedrock permissions', fix: 'Attach AmazonBedrockReadOnlyAccess managed policy to the IAM user in the AWS Console.' },
+      { symptom: 'ResourceNotFoundException', cause: 'Wrong BEDROCK_KB_ID or wrong region', fix: 'Verify the KB ID and region match exactly — they are case-sensitive. KB IDs look like KBXXXXXXXXXX.' },
+    ],
+    deploymentNote: 'Requires an existing Bedrock Knowledge Base. For production, use IAM roles instead of access keys. Never commit AWS credentials to git.',
+  },
+
+  datadog: {
+    npxCommand: 'npx @datadog/datadog-mcp-server',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "datadog": {
+      "command": "npx",
+      "args": ["@datadog/datadog-mcp-server"],
+      "env": {
+        "DATADOG_API_KEY": "your_api_key_here",
+        "DATADOG_APP_KEY": "your_app_key_here"
+      }
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add datadog -e DATADOG_API_KEY=xxx -e DATADOG_APP_KEY=xxx -- npx @datadog/datadog-mcp-server',
+    envVars: [
+      { name: 'DATADOG_API_KEY', required: true, description: 'Datadog API key — scoped to read metrics, logs, and dashboards.', example: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4', howToGet: 'Datadog → Organization Settings → API Keys → New Key. Use read-only scope.', security: 'secret' },
+      { name: 'DATADOG_APP_KEY', required: true, description: 'Datadog application key for query access.', example: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2', howToGet: 'Datadog → Organization Settings → Application Keys → New Key.', security: 'secret' },
+      { name: 'DATADOG_SITE', required: false, description: 'Datadog regional site (default: datadoghq.com).', example: 'datadoghq.eu', howToGet: 'EU customers use datadoghq.eu. AP customers use ap1.datadoghq.com. Check your Datadog URL.', security: 'config' },
+    ],
+    verifyPrompt: 'Show me the error rate and p99 latency for all services in the last 30 minutes.',
+    troubleshooting: [
+      { symptom: '403 Forbidden', cause: 'API or App key lacks required scopes', fix: 'Ensure both keys have metrics:read, logs:read, and dashboards:read permissions.' },
+      { symptom: 'Wrong region data', cause: 'DATADOG_SITE not set for non-US instances', fix: 'Add DATADOG_SITE=datadoghq.eu (EU) or ap1.datadoghq.com (AP) to your env config.' },
+    ],
+    deploymentNote: 'Use read-only API keys. Never grant write access (monitors, incidents) to Claude integrations — misconfigured alerts can flood on-call channels.',
+  },
+
+  slack: {
+    npxCommand: 'npx -y @modelcontextprotocol/server-slack',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "slack": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "env": {
+        "SLACK_BOT_TOKEN": "xoxb-your-bot-token-here",
+        "SLACK_TEAM_ID": "T0XXXXXXXXX"
+      }
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add slack -e SLACK_BOT_TOKEN=xoxb-... -e SLACK_TEAM_ID=T0XXXXXXX -- npx -y @modelcontextprotocol/server-slack',
+    envVars: [
+      { name: 'SLACK_BOT_TOKEN', required: true, description: 'Slack Bot User OAuth token with channels:read and channels:history scopes.', example: 'xoxb-0000000000-0000000000000-xxxxxxxxxxxxxxxxxxxx', howToGet: 'api.slack.com/apps → Create New App → OAuth & Permissions → Bot Token Scopes: add channels:read, channels:history, users:read → Install to Workspace → copy Bot User OAuth Token.', security: 'secret' },
+      { name: 'SLACK_TEAM_ID', required: true, description: 'Your Slack workspace ID.', example: 'T0XXXXXXX', howToGet: 'In Slack: right-click workspace name → Copy workspace ID. Or check your workspace URL: company.slack.com — the ID is shown in Admin → Workspace Settings.', security: 'config' },
+    ],
+    verifyPrompt: 'List the 5 most recently active public channels and show the last message from each.',
+    troubleshooting: [
+      { symptom: 'invalid_auth / token_revoked', cause: 'Bot token invalid or app uninstalled', fix: 'Reinstall the Slack app to your workspace at api.slack.com/apps and regenerate the token.' },
+      { symptom: 'missing_scope', cause: 'Bot lacks required Slack OAuth scopes', fix: 'In api.slack.com/apps → OAuth & Permissions → add: channels:read, channels:history, users:read, then reinstall the app.' },
+      { symptom: 'channel_not_found for private channels', cause: 'Bot not added to the private channel', fix: 'Invite your bot to the channel: /invite @YourBotName — bots cannot see channels they haven\'t been added to.' },
+    ],
+    deploymentNote: 'Use a dedicated bot account — never a personal user token. Add the bot only to channels it needs. Never grant admin or write-to-all-channels scopes.',
+  },
+
+  linear: {
+    npxCommand: 'npx @linear/mcp-server',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "linear": {
+      "command": "npx",
+      "args": ["@linear/mcp-server"],
+      "env": {
+        "LINEAR_API_KEY": "lin_api_yourKeyHere"
+      }
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add linear -e LINEAR_API_KEY=lin_api_xxx -- npx @linear/mcp-server',
+    envVars: [
+      { name: 'LINEAR_API_KEY', required: true, description: 'Linear personal API key. Grants access to all teams your account can see.', example: 'lin_api_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', howToGet: 'Linear → Settings → Account → API → Personal API keys → Create new key.', security: 'secret' },
+    ],
+    verifyPrompt: 'List my assigned issues that are currently In Progress, sorted by priority.',
+    troubleshooting: [
+      { symptom: 'Unauthorized (401)', cause: 'API key revoked or invalid', fix: 'Generate a new key at linear.app/settings/api. Keys are prefixed lin_api_.' },
+      { symptom: 'Team not found', cause: 'Key holder doesn\'t have access to that team', fix: 'Verify the team identifier matches a team visible in your Linear workspace.' },
+    ],
+    deploymentNote: 'Personal API keys inherit your account\'s full Linear permissions. For CI/CD, create a bot-user account with minimal team access.',
+  },
+
+  'sequential-thinking': {
+    npxCommand: 'npx -y @modelcontextprotocol/server-sequential-thinking',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add sequential-thinking -- npx -y @modelcontextprotocol/server-sequential-thinking',
+    envVars: [],
+    verifyPrompt: 'Use sequential thinking to analyze the tradeoffs of switching our REST API to GraphQL. Consider latency, developer experience, and client-side caching.',
+    troubleshooting: [
+      { symptom: 'Tool not appearing in Claude', cause: 'Config file not saved or Claude Desktop not restarted', fix: 'Save config, fully quit Claude Desktop (not just close window), relaunch. Check: claude mcp list.' },
+    ],
+    deploymentNote: 'Zero external dependencies. Adds a think() tool that prompts Claude to reason step-by-step before answering. Works entirely locally — no API keys, no external calls.',
+  },
+
+  n8n: {
+    npxCommand: 'npx @n8n/mcp-server',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "n8n": {
+      "command": "npx",
+      "args": ["@n8n/mcp-server"],
+      "env": {
+        "N8N_BASE_URL": "http://localhost:5678",
+        "N8N_API_KEY": "your_n8n_api_key_here"
+      }
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add n8n -e N8N_BASE_URL=http://localhost:5678 -e N8N_API_KEY=xxx -- npx @n8n/mcp-server',
+    envVars: [
+      { name: 'N8N_BASE_URL', required: true, description: 'URL of your n8n instance — local or cloud.', example: 'http://localhost:5678', howToGet: 'Local: http://localhost:5678 (default). n8n.cloud: https://yourworkspace.app.n8n.cloud', security: 'config' },
+      { name: 'N8N_API_KEY', required: true, description: 'n8n API key to authenticate workflow access.', example: 'n8n_api_xxxxxxxxxxxx', howToGet: 'n8n UI → Settings (top-right) → n8n API → API keys → Add API key.', security: 'secret' },
+    ],
+    verifyPrompt: 'List all n8n workflows and tell me which ones are currently active.',
+    troubleshooting: [
+      { symptom: 'Connection refused on localhost:5678', cause: 'n8n not running', fix: 'Start n8n: npx n8n (dev) or docker run -p 5678:5678 n8nio/n8n (Docker).' },
+      { symptom: '401 Unauthorized', cause: 'Invalid API key', fix: 'Regenerate at n8n Settings → API keys. Keys are prefixed n8n_api_.' },
+    ],
+    deploymentNote: 'n8n must be running separately. Use n8n.cloud (managed) or self-host with Docker for production. The MCP server triggers and manages workflows via the n8n REST API.',
+  },
+
+  remotion: {
+    npxCommand: 'npx @remotion/mcp',
+    claudeDesktopConfig: `{
+  "mcpServers": {
+    "remotion": {
+      "command": "npx",
+      "args": ["@remotion/mcp"]
+    }
+  }
+}`,
+    claudeCodeCmd: 'claude mcp add remotion -- npx @remotion/mcp',
+    envVars: [],
+    verifyPrompt: 'Create a simple 5-second Remotion composition that shows "Hello World" with a fade-in animation.',
+    troubleshooting: [
+      { symptom: 'Cannot find module @remotion/core', cause: 'Not running inside a Remotion project', fix: 'Bootstrap a project first: npm create video@latest — then run Claude from inside that directory.' },
+      { symptom: 'Render failed: Chrome executable not found', cause: 'Remotion\'s Chromium not installed', fix: 'Run: npx remotion install-chromium inside your Remotion project directory.' },
+      { symptom: 'Out of memory during render', cause: 'Long video or many concurrent frames', fix: 'Set concurrency: 1 in your render config. Reduce fps from 60 to 30 for development renders.' },
+    ],
+    deploymentNote: 'Works inside an existing Remotion project directory. Claude writes React code that Remotion renders to MP4/WebM. Requires Node.js 18+ and Chromium (installed via npx remotion install-chromium).',
+  },
+
+};

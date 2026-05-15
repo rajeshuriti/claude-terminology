@@ -6,6 +6,16 @@ export type SkillComplexity = 'beginner' | 'intermediate' | 'advanced';
 export type StackTier = 'startup' | 'scale' | 'enterprise';
 export type HypeVerdict = 'ship-it' | 'evaluate' | 'wait' | 'skip';
 
+export interface SkillInstallInfo {
+  npxCmd: string;         // one-liner install command
+  creates: string;        // file path created
+  claudeMdSnippet: string; // what to add to CLAUDE.md
+  firstPrompt: string;    // starter prompt after installing
+  requiresMcp?: string[]; // MCP server IDs needed
+  requiresPackages?: string[]; // npm packages needed
+  notes?: string;         // any important setup notes
+}
+
 export interface AISkill {
   id: string;
   name: string;
@@ -21,6 +31,7 @@ export interface AISkill {
   complexity: SkillComplexity;
   tags: string[];
   isNew?: boolean;
+  installInfo: SkillInstallInfo;
 }
 
 export interface FeaturedRepo {
@@ -135,6 +146,15 @@ Always ask: "What question types must this system answer?" before any design dec
     ],
     tags: ['RAG', 'embeddings', 'vector-search', 'production'],
     isNew: false,
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add rag-architect',
+      creates: '.claude/skills/rag-architect.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/rag-architect.md',
+      firstPrompt: 'Design a RAG pipeline for our 200K-document internal knowledge base. We use PostgreSQL today but are open to a vector store.',
+      requiresMcp: ['chroma', 'postgres'],
+      requiresPackages: ['@anthropic-ai/sdk', 'chromadb'],
+      notes: 'Pair with the Chroma or Postgres MCP server so Claude can query your actual data during design sessions.',
+    },
   },
 
   {
@@ -175,6 +195,13 @@ FOR CLAUDE SPECIFICALLY:
       'Design a chain-of-thought prompt for complex multi-step analysis',
     ],
     tags: ['prompting', 'XML', 'structured-output', 'chain-of-thought'],
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add prompt-architect',
+      creates: '.claude/skills/prompt-architect.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/prompt-architect.md',
+      firstPrompt: 'Redesign this prompt to produce reliable JSON output with guaranteed schema compliance: [paste your prompt here]',
+      notes: 'No MCP servers required. Works immediately after install — paste any prompt and Claude will redesign it using structured engineering principles.',
+    },
   },
 
   {
@@ -213,6 +240,15 @@ ANTI-PATTERNS TO CATCH: sequential chains (use parallel), no timeout, implicit t
     ],
     tags: ['multi-agent', 'orchestration', 'planner', 'executor'],
     isNew: true,
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add agent-orchestrator',
+      creates: '.claude/skills/agent-orchestrator.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/agent-orchestrator.md',
+      firstPrompt: 'Design a 3-agent system to automate our code review pipeline: one agent searches for context, one reviews, one writes the PR comment.',
+      requiresMcp: ['memory', 'redis'],
+      requiresPackages: ['@anthropic-ai/sdk'],
+      notes: 'Add the Memory MCP server for shared agent state. Claude will apply Planner-Executor-Monitor patterns and flag unsafe agent topologies automatically.',
+    },
   },
 
   {
@@ -252,6 +288,13 @@ DYNAMIC CONTEXT ASSEMBLY:
       'Design a context assembly pipeline for long-running agent tasks',
     ],
     tags: ['context-window', 'tokens', 'caching', 'cost-optimization'],
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add context-engineer',
+      creates: '.claude/skills/context-engineer.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/context-engineer.md',
+      firstPrompt: 'Analyze this system prompt for context efficiency. Identify what can be cached, what can be compressed, and estimate the per-request token savings: [paste system prompt]',
+      notes: 'No MCP servers required. Claude will automatically apply token counting, caching guidance, and context budget recommendations to any prompt or workflow you share.',
+    },
   },
 
   {
@@ -294,6 +337,15 @@ EVAL-DRIVEN DEVELOPMENT:
     ],
     tags: ['MCP', 'Zod', 'TypeScript', 'security', 'production'],
     isNew: true,
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add mcp-builder',
+      creates: '.claude/skills/mcp-builder.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/mcp-builder.md',
+      firstPrompt: 'Build a production MCP server that exposes our internal analytics API to Claude. It needs read-only access, Zod validation, structured error handling, and request logging.',
+      requiresMcp: ['filesystem', 'git'],
+      requiresPackages: ['@modelcontextprotocol/sdk', 'zod'],
+      notes: 'Run `npm install @modelcontextprotocol/sdk zod` in your project first. Claude will scaffold the full server with security hardening, eval test cases, and deployment checklist.',
+    },
   },
 
   // ── Coding & Testing ──────────────────────────────────────────────────────
@@ -334,6 +386,14 @@ Always explain WHY the issue matters, not just WHAT it is.`,
       'Catch security issues in PRs that modify authentication code',
     ],
     tags: ['code-review', 'security', 'TypeScript', 'conventions'],
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add code-reviewer',
+      creates: '.claude/skills/code-reviewer.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/code-reviewer.md',
+      firstPrompt: 'Review this PR diff for security vulnerabilities, TypeScript correctness, and convention violations. Use the file:line format for all findings: [paste git diff]',
+      requiresMcp: ['filesystem', 'github'],
+      notes: 'Works without MCP servers (paste diffs directly). Add GitHub MCP to enable automatic PR review by linking to a PR URL. Claude outputs findings as file:line comments ready to paste.',
+    },
   },
 
   {
@@ -372,6 +432,15 @@ TEST QUALITY RULES:
       'Write integration tests for a multi-step API workflow',
     ],
     tags: ['testing', 'vitest', 'coverage', 'edge-cases'],
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add test-generator',
+      creates: '.claude/skills/test-generator.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/test-generator.md',
+      firstPrompt: 'Generate a complete test suite for this authentication service. Cover all edge cases, error conditions, and boundary values. Use Vitest: [paste the file]',
+      requiresMcp: ['filesystem'],
+      requiresPackages: ['vitest', '@testing-library/react'],
+      notes: 'Add Filesystem MCP to let Claude read your source files directly. Claude targets edge cases and boundary values specifically — not just the happy path.',
+    },
   },
 
   {
@@ -413,6 +482,14 @@ ERROR STANDARDS:
       'Write OpenAPI/Swagger documentation for an undocumented API',
     ],
     tags: ['API', 'REST', 'OpenAPI', 'versioning', 'DX'],
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add api-designer',
+      creates: '.claude/skills/api-designer.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/api-designer.md',
+      firstPrompt: 'Design a versioned REST API for our user management service. It needs CRUD endpoints, pagination, consistent error objects, and an OpenAPI 3.1 spec.',
+      requiresPackages: ['@apidevtools/swagger-parser', 'openapi-typescript'],
+      notes: 'No MCP servers required for design sessions. Claude generates OpenAPI YAML you can validate with `npx swagger-parser validate openapi.yaml` and convert to TypeScript types with `npx openapi-typescript`.',
+    },
   },
 
   {
@@ -454,6 +531,15 @@ SAFE OPERATIONS (can deploy directly):
       'Design backfill strategy for a 50M row table without locking',
     ],
     tags: ['migrations', 'postgres', 'zero-downtime', 'safety'],
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add db-migration',
+      creates: '.claude/skills/db-migration.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/db-migration.md',
+      firstPrompt: 'Design a zero-downtime migration to rename the `user_name` column to `username` in our 50M-row users table. We use PostgreSQL 15 and deploy with zero downtime.',
+      requiresMcp: ['postgres'],
+      requiresPackages: ['pg', 'db-migrate'],
+      notes: 'Add the PostgreSQL MCP server so Claude can inspect your actual schema. Claude will apply expand-contract phasing, flag dangerous operations, and output SQL with CONCURRENTLY and NOT VALID clauses where appropriate.',
+    },
   },
 
   // ── Browser & Web ─────────────────────────────────────────────────────────
@@ -497,6 +583,15 @@ PAGE OBJECT PATTERN:
       'Set up parallel browser testing across Chrome, Firefox, and Safari',
     ],
     tags: ['playwright', 'E2E', 'browser-testing', 'automation'],
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add playwright-expert',
+      creates: '.claude/skills/playwright-expert.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/playwright-expert.md',
+      firstPrompt: 'Write a stable E2E test for our checkout flow: add item to cart, proceed to checkout, enter payment details, confirm order. Output full Playwright TypeScript with Page Object pattern.',
+      requiresMcp: ['playwright-mcp', 'filesystem'],
+      requiresPackages: ['@playwright/test'],
+      notes: 'Run `npx playwright install` first to download browser binaries. Add Playwright MCP to let Claude execute tests and observe real browser state. Claude uses data-testid selectors and never arbitrary timeouts.',
+    },
   },
 
   {
@@ -539,6 +634,15 @@ LEGAL & ETHICAL:
     ],
     tags: ['scraping', 'extraction', 'Firecrawl', 'Playwright', 'structured-data'],
     isNew: true,
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add web-extractor',
+      creates: '.claude/skills/web-extractor.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/web-extractor.md',
+      firstPrompt: 'Extract structured product data (name, price, SKU, description) from this e-commerce category page and return it as a JSON array: [paste URL]',
+      requiresMcp: ['firecrawl', 'playwright-mcp'],
+      requiresPackages: ['firecrawl-js'],
+      notes: 'Install Firecrawl MCP for JS-rendered pages and scale. For simple static HTML, Playwright MCP is sufficient. Claude wraps all extracted content in delimiters to prevent prompt injection.',
+    },
   },
 
   {
@@ -579,6 +683,15 @@ DIFF THRESHOLDS:
       'Build a visual diff report that shows exactly what changed in a deploy',
     ],
     tags: ['visual-testing', 'Playwright', 'screenshots', 'UI-regression'],
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add visual-tester',
+      creates: '.claude/skills/visual-tester.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/visual-tester.md',
+      firstPrompt: 'Set up visual regression testing for our design system component library. We use Storybook and want to catch CSS regressions across mobile, tablet, and desktop viewports in CI.',
+      requiresMcp: ['playwright-mcp', 'filesystem'],
+      requiresPackages: ['@playwright/test'],
+      notes: 'Run `npx playwright install` first. Claude outputs screenshot capture scripts with 375/768/1280px viewports, baseline management instructions, and a CI YAML diff-report step.',
+    },
   },
 
   // ── Design Systems ────────────────────────────────────────────────────────
@@ -624,6 +737,13 @@ ALWAYS END WITH: "Apply these patterns consistently. Never invent new color valu
     ],
     tags: ['DESIGN.md', 'design-system', 'Tailwind', 'UI-generation'],
     isNew: true,
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add design-md',
+      creates: '.claude/skills/design-md.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/design-md.md\n\n## Design System\n@DESIGN.md',
+      firstPrompt: 'Create a DESIGN.md for our SaaS product. Primary brand color: #6366f1. We use Tailwind CSS v4, Inter font, and target enterprise B2B users. Include full color system, type scale, button variants, and card patterns.',
+      notes: 'After Claude generates your DESIGN.md, add `@DESIGN.md` to your CLAUDE.md. From that point every UI generation request automatically inherits your design system without repeating it.',
+    },
   },
 
   {
@@ -666,6 +786,15 @@ NEVER: inline styles for themeable values, div with onClick without role`,
       'Create a form component library with validation state and error display',
     ],
     tags: ['React', 'TypeScript', 'Tailwind', 'accessibility'],
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add component-generator',
+      creates: '.claude/skills/component-generator.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/component-generator.md\n\n## Design System\n@DESIGN.md',
+      firstPrompt: 'Generate a DataTable component with TypeScript generics, sortable columns, client-side pagination, row selection, and full ARIA accessibility. Use Tailwind CSS and cva() for variants.',
+      requiresMcp: ['filesystem'],
+      requiresPackages: ['class-variance-authority', 'clsx'],
+      notes: 'Pair with DESIGN.md Architect skill for consistent styling. Run `npm install class-variance-authority clsx` for variant management. Claude never uses dangerouslySetInnerHTML or inline styles for themeable values.',
+    },
   },
 
   // ── Security & DevOps ─────────────────────────────────────────────────────
@@ -709,6 +838,14 @@ ALWAYS REPORT: severity (critical/high/medium), line number, proof-of-concept, f
       'Scan a codebase for hardcoded secrets and insecure random number usage',
     ],
     tags: ['security', 'OWASP', 'injection', 'XSS', 'authentication'],
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add security-reviewer',
+      creates: '.claude/skills/security-reviewer.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/security-reviewer.md',
+      firstPrompt: 'Security audit this authentication module. Check for OWASP Top 10 vulnerabilities, hardcoded secrets, and session management issues. Report each finding with severity, file:line, and a fix recommendation: [paste code]',
+      requiresMcp: ['filesystem', 'git'],
+      notes: 'Add to your CI/CD pipeline via `claude -p "$(git diff main)" --skill security-reviewer`. Claude outputs findings as file:line CRITICAL/HIGH/MEDIUM annotations compatible with GitHub review comments.',
+    },
   },
 
   {
@@ -753,6 +890,13 @@ LOGGING & AUDIT:
     ],
     tags: ['MCP', 'security', 'prompt-injection', 'AI-security'],
     isNew: true,
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add mcp-auditor',
+      creates: '.claude/skills/mcp-auditor.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/mcp-auditor.md',
+      firstPrompt: 'Audit our MCP server configuration. Identify prompt injection surfaces, over-permissioned tools, capability chaining risks, and missing audit logging. Config: [paste your .claude/config.json]',
+      notes: 'No MCP servers required — paste your config.json directly. Claude produces a prioritised risk register with CRITICAL/HIGH/MEDIUM findings and remediation steps specific to your MCP topology.',
+    },
   },
 
   {
@@ -797,6 +941,15 @@ ROLLBACK:
       'Implement automated rollback triggers based on error rate monitoring',
     ],
     tags: ['CI/CD', 'GitHub-Actions', 'deployment', 'reliability'],
+    installInfo: {
+      npxCmd: 'npx @anthropic/claude-skill add ci-cd-engineer',
+      creates: '.claude/skills/ci-cd-engineer.md',
+      claudeMdSnippet: '## Active Skills\n@.claude/skills/ci-cd-engineer.md',
+      firstPrompt: 'Design a GitHub Actions pipeline for our Node.js monorepo. Goals: parallel jobs under 8 minutes, node_modules caching, deploy gate requiring all checks to pass, and one-click rollback.',
+      requiresMcp: ['filesystem', 'git'],
+      requiresPackages: [],
+      notes: 'Add Filesystem MCP so Claude can read your existing workflow files and produce targeted improvements. Claude outputs complete GitHub Actions YAML with caching keys, matrix strategies, and environment protection rules.',
+    },
   },
 ];
 
