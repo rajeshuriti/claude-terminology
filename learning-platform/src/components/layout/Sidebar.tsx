@@ -12,30 +12,96 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const navItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/explorer', icon: Search, label: 'Concept Explorer' },
-  { path: '/graph', icon: GitBranch, label: 'Concept Graph' },
-  { path: '/quiz', icon: HelpCircle, label: 'Quiz & Flashcards' },
-  { path: '/roadmap', icon: Map, label: 'Study Roadmaps' },
-  { path: '/compare', icon: ArrowLeftRight, label: 'Compare Concepts' },
-  { path: '/bookmarks', icon: Bookmark, label: 'Bookmarks' },
-  { path: '/internals', icon: null, label: 'Claude Internals', emoji: '⚙️', isNew: false },
-  { path: '/commands', icon: null, label: 'Commands Studio', emoji: '/', isNew: false },
-  { path: '/certification', icon: null, label: 'Cert Practice Exam', emoji: '🏆', isNew: false },
-  { path: '/study', icon: null, label: 'Exam Study Guide', emoji: '📖', isNew: false },
-  { path: '/connectors', icon: null, label: 'Connectors Hub', emoji: '🔌', isNew: false },
-  { path: '/architecture', icon: null, label: 'Architecture Explorer', emoji: '🏗️', isNew: false },
-  { path: '/mcp-mastery', icon: null, label: 'MCP Mastery', emoji: '🔌', isNew: false },
-  { path: '/mcp-ecosystem', icon: null, label: 'Ecosystem Hub', emoji: '🌐', isNew: false },
-  { path: '/context-lab', icon: null, label: 'Context & Token Lab', emoji: '🧪', isNew: false },
-  { path: '/failure-lab', icon: null, label: 'AI Failure Lab', emoji: '🔥', isNew: false },
-  { path: '/cheat-sheets', icon: null, label: 'Claude Cheat Sheets', emoji: '⌨️', isNew: false },
-  { path: '/command-center', icon: null, label: 'Command Center', emoji: '⚡', isNew: true },
+// Active-state gradient per path — extracted from inline ternary chain
+const ACTIVE_GRADIENTS: Record<string, string> = {
+  '/internals':      'from-violet-600 to-sky-500',
+  '/commands':       'from-sky-500 to-emerald-500',
+  '/certification':  'from-amber-500 to-orange-500',
+  '/study':          'from-emerald-500 to-sky-500',
+  '/connectors':     'from-cyan-500 to-sky-600',
+  '/architecture':   'from-violet-500 to-pink-500',
+  '/mcp-mastery':    'from-pink-500 to-violet-600',
+  '/mcp-ecosystem':  'from-emerald-500 to-sky-500',
+  '/context-lab':    'from-sky-500 to-violet-600',
+  '/failure-lab':    'from-red-600 to-orange-500',
+  '/cheat-sheets':   'from-sky-600 to-cyan-500',
+  '/command-center': 'from-violet-600 to-indigo-500',
+};
+
+function activeClass(path: string): string {
+  const gradient = ACTIVE_GRADIENTS[path];
+  return gradient
+    ? `bg-gradient-to-r ${gradient} text-white shadow-sm`
+    : 'bg-sky-500 text-white shadow-sm';
+}
+
+type NavItem = {
+  path: string;
+  icon?: typeof LayoutDashboard | null;
+  label: string;
+  emoji?: string;
+  isNew?: boolean;
+};
+
+type NavGroup = {
+  label: string;
+  items: NavItem[];
+};
+
+const navGroups: NavGroup[] = [
+  {
+    label: 'Core',
+    items: [
+      { path: '/',          icon: LayoutDashboard, label: 'Dashboard' },
+      { path: '/bookmarks', icon: Bookmark,        label: 'Bookmarks' },
+    ],
+  },
+  {
+    label: 'Learn',
+    items: [
+      { path: '/explorer',    icon: Search,        label: 'Concept Explorer' },
+      { path: '/graph',       icon: GitBranch,     label: 'Concept Graph' },
+      { path: '/compare',     icon: ArrowLeftRight, label: 'Compare Concepts' },
+      { path: '/internals',   emoji: '⚙️',         label: 'Claude Internals' },
+    ],
+  },
+  {
+    label: 'Certify',
+    items: [
+      { path: '/quiz',          icon: HelpCircle, label: 'Quiz & Flashcards' },
+      { path: '/roadmap',       icon: Map,        label: 'Study Roadmaps' },
+      { path: '/study',         emoji: '📖',      label: 'Exam Study Guide' },
+      { path: '/certification', emoji: '🏆',      label: 'Cert Practice Exam' },
+    ],
+  },
+  {
+    label: 'Build',
+    items: [
+      { path: '/cheat-sheets',   emoji: '⌨️', label: 'Cheat Sheets' },
+      { path: '/command-center', emoji: '⚡', label: 'Command Center', isNew: false },
+      { path: '/commands',       emoji: '/',  label: 'Slash Commands' },
+      { path: '/architecture',   emoji: '🏗️', label: 'Architecture Explorer' },
+    ],
+  },
+  {
+    label: 'Systems',
+    items: [
+      { path: '/context-lab',   emoji: '🧪', label: 'Context & Token Lab' },
+      { path: '/mcp-mastery',   emoji: '🔌', label: 'MCP Mastery' },
+      { path: '/connectors',    emoji: '🔗', label: 'Connectors & Workflows' },
+      { path: '/mcp-ecosystem', emoji: '🌐', label: 'MCP Ecosystem' },
+    ],
+  },
+  {
+    label: 'Labs',
+    items: [
+      { path: '/failure-lab', emoji: '🔥', label: 'AI Failure Lab' },
+    ],
+  },
 ];
 
-const devItems = [
-  { path: '/studio', icon: null, label: 'Claude Studio', emoji: '✺' },
+const devItems: NavItem[] = [
+  { path: '/studio', emoji: '✺', label: 'Claude Studio' },
 ];
 
 function SidebarContent({ onClose }: { onClose: () => void }) {
@@ -50,138 +116,142 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
     onClose();
   };
 
+  const dm = darkMode;
+  const inactiveClass = dm
+    ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
+    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900';
+
   return (
-    <div className={`flex flex-col h-full ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-900'} overflow-hidden`}>
+    <div className={`flex flex-col h-full ${dm ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-900'} overflow-hidden`}>
       {/* Header */}
-      <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
+      <div className={`flex items-center justify-between p-4 border-b ${dm ? 'border-slate-700' : 'border-slate-100'}`}>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-violet-600 flex items-center justify-center text-white text-sm font-bold">C</div>
           <div>
             <div className="text-sm font-semibold">Claude Learning</div>
-            <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>SA Foundation</div>
+            <div className={`text-xs ${dm ? 'text-slate-400' : 'text-slate-500'}`}>SA Foundation</div>
           </div>
         </div>
-        <button onClick={onClose} className={`p-1.5 rounded-lg transition-colors ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} lg:hidden`}>
+        <button onClick={onClose} className={`p-1.5 rounded-lg transition-colors ${dm ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} lg:hidden`}>
           <X size={16} />
         </button>
       </div>
 
       {/* Quick Stats */}
-      <div className={`mx-3 mt-3 p-3 rounded-xl ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+      <div className={`mx-3 mt-3 p-3 rounded-xl ${dm ? 'bg-slate-800' : 'bg-slate-50'}`}>
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
             <div className="text-base font-bold text-sky-500">{completedConcepts.length}</div>
-            <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Done</div>
+            <div className={`text-xs ${dm ? 'text-slate-400' : 'text-slate-500'}`}>Done</div>
           </div>
           <div>
             <div className="text-base font-bold text-violet-500">{totalQuizAttempts}</div>
-            <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Quizzed</div>
+            <div className={`text-xs ${dm ? 'text-slate-400' : 'text-slate-500'}`}>Quizzed</div>
           </div>
           <div>
             <div className="text-base font-bold text-emerald-500">{accuracy}%</div>
-            <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Accuracy</div>
+            <div className={`text-xs ${dm ? 'text-slate-400' : 'text-slate-500'}`}>Accuracy</div>
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-1">
-        <div className={`text-xs font-semibold uppercase tracking-wider mb-2 px-2 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Navigation</div>
-        {navItems.map(({ path, icon: Icon, label, emoji, isNew } : { path: string; icon: typeof LayoutDashboard | null; label: string; emoji?: string; isNew?: boolean }) => (
-          <NavLink
-            key={path}
-            to={path}
-            end={path === '/'}
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
-                isActive
-                  ? path === '/internals'
-                    ? 'bg-gradient-to-r from-violet-600 to-sky-500 text-white shadow-sm'
-                    : path === '/commands'
-                      ? 'bg-gradient-to-r from-sky-500 to-emerald-500 text-white shadow-sm'
-                      : path === '/certification'
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm'
-                        : path === '/study'
-                          ? 'bg-gradient-to-r from-emerald-500 to-sky-500 text-white shadow-sm'
-                          : path === '/connectors'
-                            ? 'bg-gradient-to-r from-cyan-500 to-sky-600 text-white shadow-sm'
-                            : path === '/architecture'
-                              ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-sm'
-                              : path === '/mcp-mastery'
-                                  ? 'bg-gradient-to-r from-pink-500 to-violet-600 text-white shadow-sm'
-                                  : path === '/mcp-ecosystem'
-                                    ? 'bg-gradient-to-r from-emerald-500 to-sky-500 text-white shadow-sm'
-                                    : path === '/context-lab'
-                                      ? 'bg-gradient-to-r from-sky-500 to-violet-600 text-white shadow-sm'
-                                      : path === '/failure-lab'
-                                        ? 'bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-sm'
-                                        : path === '/cheat-sheets'
-                                          ? 'bg-gradient-to-r from-sky-600 to-cyan-500 text-white shadow-sm'
-                                          : path === '/command-center'
-                                            ? 'bg-gradient-to-r from-violet-600 to-indigo-500 text-white shadow-sm'
-                                            : 'bg-sky-500 text-white shadow-sm'
-                  : darkMode
-                    ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-              }`
-            }
-          >
-            {emoji ? <span className="text-base leading-none">{emoji}</span> : Icon ? <Icon size={16} /> : null}
-            {label}
-            {isNew && <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-violet-500/30 text-violet-300 font-bold" style={{ fontSize: 9 }}>NEW</span>}
-          </NavLink>
+      {/* Navigation — grouped */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-4">
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            <div className={`text-xs font-semibold uppercase tracking-wider mb-1 px-2 ${dm ? 'text-slate-500' : 'text-slate-400'}`}>
+              {group.label}
+            </div>
+            <div className="space-y-0.5">
+              {group.items.map(({ path, icon: Icon, label, emoji, isNew }) => (
+                <NavLink
+                  key={path}
+                  to={path}
+                  end={path === '/'}
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                      isActive ? activeClass(path) : inactiveClass
+                    }`
+                  }
+                >
+                  {emoji
+                    ? <span className="text-base leading-none">{emoji}</span>
+                    : Icon ? <Icon size={16} /> : null}
+                  {label}
+                  {isNew && (
+                    <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-violet-500/30 text-violet-300 font-bold" style={{ fontSize: 9 }}>
+                      NEW
+                    </span>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
 
-        {/* Categories */}
-        <div className={`text-xs font-semibold uppercase tracking-wider mt-4 mb-2 px-2 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Categories</div>
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => handleCategoryClick(cat.id)}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 text-left ${
-              selectedCategory === cat.id
-                ? darkMode ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-900'
-                : darkMode
-                  ? 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-            }`}
-          >
-            <span className="text-base leading-none">{cat.icon}</span>
-            <span className="flex-1 truncate">{cat.name}</span>
-            <ChevronRight size={12} className="opacity-50 shrink-0" />
-          </button>
-        ))}
+        {/* Concept Categories */}
+        <div>
+          <div className={`text-xs font-semibold uppercase tracking-wider mb-1 px-2 ${dm ? 'text-slate-500' : 'text-slate-400'}`}>
+            Categories
+          </div>
+          <div className="space-y-0.5">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleCategoryClick(cat.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 text-left ${
+                  selectedCategory === cat.id
+                    ? dm ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-900'
+                    : dm
+                      ? 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                }`}
+              >
+                <span className="text-base leading-none">{cat.icon}</span>
+                <span className="flex-1 truncate">{cat.name}</span>
+                <ChevronRight size={12} className="opacity-50 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Developer Tools */}
-        <div className={`text-xs font-semibold uppercase tracking-wider mt-4 mb-2 px-2 ${darkMode ? 'text-slate-600' : 'text-slate-300'}`}>Developer Tools</div>
-        {devItems.map(({ path, label, emoji }) => (
-          <NavLink
-            key={path}
-            to={path}
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
-                isActive
-                  ? 'bg-gradient-to-r from-amber-600 to-orange-500 text-white shadow-sm'
-                  : darkMode
-                    ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'
-                    : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
-              }`
-            }
-          >
-            <span className="text-base leading-none">{emoji}</span>
-            {label}
-          </NavLink>
-        ))}
+        <div>
+          <div className={`text-xs font-semibold uppercase tracking-wider mb-1 px-2 ${dm ? 'text-slate-600' : 'text-slate-300'}`}>
+            Developer Tools
+          </div>
+          <div className="space-y-0.5">
+            {devItems.map(({ path, label, emoji }) => (
+              <NavLink
+                key={path}
+                to={path}
+                onClick={onClose}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-amber-600 to-orange-500 text-white shadow-sm'
+                      : dm
+                        ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'
+                        : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+                  }`
+                }
+              >
+                <span className="text-base leading-none">{emoji}</span>
+                {label}
+              </NavLink>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Cert Badge */}
-      <div className={`p-3 border-t ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
-        <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${darkMode ? 'bg-gradient-to-r from-sky-900/40 to-violet-900/40 border border-sky-700/30' : 'bg-gradient-to-r from-sky-50 to-violet-50 border border-sky-200/50'}`}>
+      <div className={`p-3 border-t ${dm ? 'border-slate-700' : 'border-slate-100'}`}>
+        <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${dm ? 'bg-gradient-to-r from-sky-900/40 to-violet-900/40 border border-sky-700/30' : 'bg-gradient-to-r from-sky-50 to-violet-50 border border-sky-200/50'}`}>
           <Trophy size={18} className="text-sky-500 shrink-0" />
           <div>
-            <div className={`text-xs font-semibold ${darkMode ? 'text-sky-300' : 'text-sky-700'}`}>SA Foundation Prep</div>
-            <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>85+ concepts to master</div>
+            <div className={`text-xs font-semibold ${dm ? 'text-sky-300' : 'text-sky-700'}`}>SA Foundation Prep</div>
+            <div className={`text-xs ${dm ? 'text-slate-400' : 'text-slate-500'}`}>85+ concepts to master</div>
           </div>
         </div>
       </div>
