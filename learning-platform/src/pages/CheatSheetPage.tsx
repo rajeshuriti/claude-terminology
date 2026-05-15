@@ -211,28 +211,26 @@ const MCP_FLOW_STEPS = [
 function MCPFlowPanel({ dm }: { dm: boolean }) {
   const [activeStep, setActiveStep] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [flowIdx, setFlowIdx] = useState(-1);
+  const flowIdxRef = useRef(-1);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!playing) return;
     timerRef.current = setInterval(() => {
-      setFlowIdx(i => {
-        if (i >= MCP_FLOW_STEPS.length - 1) { setPlaying(false); return i; }
-        setActiveStep(MCP_FLOW_STEPS[i + 1].id);
-        return i + 1;
-      });
+      flowIdxRef.current += 1;
+      if (flowIdxRef.current >= MCP_FLOW_STEPS.length - 1) { setPlaying(false); return; }
+      setActiveStep(MCP_FLOW_STEPS[flowIdxRef.current + 1].id);
     }, 900);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [playing]);
 
-  const reset = () => { setPlaying(false); setFlowIdx(-1); setActiveStep(null); if (timerRef.current) clearInterval(timerRef.current); };
+  const reset = () => { setPlaying(false); flowIdxRef.current = -1; setActiveStep(null); if (timerRef.current) clearInterval(timerRef.current); };
   const currentStep = MCP_FLOW_STEPS.find(s => s.id === (activeStep ?? MCP_FLOW_STEPS[0].id));
 
   return (
     <div className="space-y-4">
       <div className="flex gap-3">
-        <button onClick={() => { reset(); setTimeout(() => { setStepIdx(0); setActiveStep(MCP_FLOW_STEPS[0].id); setPlaying(true); }, 50); }} disabled={playing}
+        <button onClick={() => { reset(); setTimeout(() => { flowIdxRef.current = 0; setActiveStep(MCP_FLOW_STEPS[0].id); setPlaying(true); }, 50); }} disabled={playing}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${playing ? 'opacity-50 cursor-not-allowed bg-slate-700 text-slate-400' : 'bg-sky-600 hover:bg-sky-700 text-white'}`}>
           {playing ? '▶ Running...' : '▶ Animate Flow'}
         </button>
