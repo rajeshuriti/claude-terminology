@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Search, GitBranch, HelpCircle,
-  Map, ArrowLeftRight, X, ChevronRight, Trophy, Bookmark
+  Map, ArrowLeftRight, X, ChevronRight, ChevronDown, Trophy, Bookmark
 } from 'lucide-react';
 import { categories } from '@/data/categories';
 import { useAppStore } from '@/store/appStore';
@@ -66,21 +67,21 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: 'Certify',
-    items: [
-      { path: '/quiz',          icon: HelpCircle, label: 'Quiz & Flashcards' },
-      { path: '/roadmap',       icon: Map,        label: 'Study Roadmaps' },
-      { path: '/study',         emoji: '📖',      label: 'Exam Study Guide' },
-      { path: '/certification', emoji: '🏆',      label: 'Cert Practice Exam' },
-    ],
-  },
-  {
     label: 'Build',
     items: [
       { path: '/cheat-sheets',   emoji: '⌨️', label: 'Cheat Sheets' },
       { path: '/command-center', emoji: '⚡', label: 'Command Center', isNew: false },
       { path: '/commands',       emoji: '/',  label: 'Slash Commands' },
       { path: '/architecture',   emoji: '🏗️', label: 'Architecture Explorer' },
+    ],
+  },
+  {
+    label: 'Certify',
+    items: [
+      { path: '/quiz',          icon: HelpCircle, label: 'Quiz & Flashcards' },
+      { path: '/roadmap',       icon: Map,        label: 'Study Roadmaps' },
+      { path: '/study',         emoji: '📖',      label: 'Exam Study Guide' },
+      { path: '/certification', emoji: '🏆',      label: 'Cert Practice Exam' },
     ],
   },
   {
@@ -108,6 +109,17 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
   const { darkMode, selectedCategory, setSelectedCategory, completedConcepts, totalCorrect, totalQuizAttempts } = useAppStore();
   const navigate = useNavigate();
 
+  // Core, Learn, Build open by default; others collapsed
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(['Core', 'Learn', 'Build']));
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+
+  const toggleGroup = (label: string) =>
+    setOpenGroups(prev => {
+      const next = new Set(prev);
+      next.has(label) ? next.delete(label) : next.add(label);
+      return next;
+    });
+
   const accuracy = totalQuizAttempts > 0 ? Math.round((totalCorrect / totalQuizAttempts) * 100) : 0;
 
   const handleCategoryClick = (catId: string) => {
@@ -120,6 +132,9 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
   const inactiveClass = dm
     ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900';
+  const groupHeaderClass = `w-full flex items-center justify-between px-2 py-1 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors ${
+    dm ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+  }`;
 
   return (
     <div className={`flex flex-col h-full ${dm ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-900'} overflow-hidden`}>
@@ -156,69 +171,118 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* Navigation — grouped */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        {navGroups.map((group) => (
-          <div key={group.label}>
-            <div className={`text-xs font-semibold uppercase tracking-wider mb-1 px-2 ${dm ? 'text-slate-500' : 'text-slate-400'}`}>
-              {group.label}
-            </div>
-            <div className="space-y-0.5">
-              {group.items.map(({ path, icon: Icon, label, emoji, isNew }) => (
-                <NavLink
-                  key={path}
-                  to={path}
-                  end={path === '/'}
-                  onClick={onClose}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
-                      isActive ? activeClass(path) : inactiveClass
-                    }`
-                  }
-                >
-                  {emoji
-                    ? <span className="text-base leading-none">{emoji}</span>
-                    : Icon ? <Icon size={16} /> : null}
-                  {label}
-                  {isNew && (
-                    <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-violet-500/30 text-violet-300 font-bold" style={{ fontSize: 9 }}>
-                      NEW
-                    </span>
-                  )}
-                </NavLink>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {/* Concept Categories */}
-        <div>
-          <div className={`text-xs font-semibold uppercase tracking-wider mb-1 px-2 ${dm ? 'text-slate-500' : 'text-slate-400'}`}>
-            Categories
-          </div>
-          <div className="space-y-0.5">
-            {categories.map((cat) => (
+      <div className="flex-1 overflow-y-auto p-3 space-y-1">
+        {navGroups.map((group) => {
+          const isOpen = openGroups.has(group.label);
+          return (
+            <div key={group.label}>
               <button
-                key={cat.id}
-                onClick={() => handleCategoryClick(cat.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 text-left ${
-                  selectedCategory === cat.id
-                    ? dm ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-900'
-                    : dm
-                      ? 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-                }`}
+                onClick={() => toggleGroup(group.label)}
+                className={groupHeaderClass}
               >
-                <span className="text-base leading-none">{cat.icon}</span>
-                <span className="flex-1 truncate">{cat.name}</span>
-                <ChevronRight size={12} className="opacity-50 shrink-0" />
+                <span>{group.label}</span>
+                <motion.span
+                  animate={{ rotate: isOpen ? 0 : -90 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex items-center"
+                >
+                  <ChevronDown size={12} />
+                </motion.span>
               </button>
-            ))}
-          </div>
+              <AnimatePresence initial={false}>
+                {isOpen && (
+                  <motion.div
+                    key="content"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.18, ease: 'easeInOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className="space-y-0.5 pt-0.5 pb-1">
+                      {group.items.map(({ path, icon: Icon, label, emoji, isNew }) => (
+                        <NavLink
+                          key={path}
+                          to={path}
+                          end={path === '/'}
+                          onClick={onClose}
+                          className={({ isActive }) =>
+                            `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                              isActive ? activeClass(path) : inactiveClass
+                            }`
+                          }
+                        >
+                          {emoji
+                            ? <span className="text-base leading-none">{emoji}</span>
+                            : Icon ? <Icon size={16} /> : null}
+                          {label}
+                          {isNew && (
+                            <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-violet-500/30 text-violet-300 font-bold" style={{ fontSize: 9 }}>
+                              NEW
+                            </span>
+                          )}
+                        </NavLink>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+
+        {/* Concept Categories — collapsible */}
+        <div>
+          <button
+            onClick={() => setCategoriesOpen(o => !o)}
+            className={groupHeaderClass}
+          >
+            <span>Categories</span>
+            <motion.span
+              animate={{ rotate: categoriesOpen ? 0 : -90 }}
+              transition={{ duration: 0.15 }}
+              className="flex items-center"
+            >
+              <ChevronDown size={12} />
+            </motion.span>
+          </button>
+          <AnimatePresence initial={false}>
+            {categoriesOpen && (
+              <motion.div
+                key="cats"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.18, ease: 'easeInOut' }}
+                className="overflow-hidden"
+              >
+                <div className="space-y-0.5 pt-0.5 pb-1">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => handleCategoryClick(cat.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 text-left ${
+                        selectedCategory === cat.id
+                          ? dm ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-900'
+                          : dm
+                            ? 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                      }`}
+                    >
+                      <span className="text-base leading-none">{cat.icon}</span>
+                      <span className="flex-1 truncate">{cat.name}</span>
+                      <ChevronRight size={12} className="opacity-50 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Developer Tools */}
         <div>
-          <div className={`text-xs font-semibold uppercase tracking-wider mb-1 px-2 ${dm ? 'text-slate-600' : 'text-slate-300'}`}>
+          <div className={`text-xs font-semibold uppercase tracking-wider px-2 py-1 ${dm ? 'text-slate-600' : 'text-slate-300'}`}>
             Developer Tools
           </div>
           <div className="space-y-0.5">

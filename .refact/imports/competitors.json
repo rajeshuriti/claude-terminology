@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "competitor": "claude_code",
+      "kind": "command",
+      "source_path": "\\\\?\\D:\\Development\\claude-certification\\claude-terminology\\.claude\\commands\\add-concept.md",
+      "source_hash": "eb3d5ac4637e72ffe8c8646b224016898916d35e44975a5b8fd83eb5d38d3acf",
+      "dest_path": "\\\\?\\D:\\Development\\claude-certification\\claude-terminology\\.refact\\commands\\add-concept.md",
+      "dest_hash": "eb3d5ac4637e72ffe8c8646b224016898916d35e44975a5b8fd83eb5d38d3acf",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-05-16T02:16:45.572474100Z",
+      "metadata": {
+        "original_name": "add-concept"
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "command",
+      "source_path": "\\\\?\\D:\\Development\\claude-certification\\claude-terminology\\.claude\\commands\\add-connector.md",
+      "source_hash": "96dcdaad161b7205f830007709039a2eb8af71bb0254667a152f5b0d722072c9",
+      "dest_path": "\\\\?\\D:\\Development\\claude-certification\\claude-terminology\\.refact\\commands\\add-connector.md",
+      "dest_hash": "96dcdaad161b7205f830007709039a2eb8af71bb0254667a152f5b0d722072c9",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-05-16T02:16:45.586417800Z",
+      "metadata": {
+        "original_name": "add-connector"
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "command",
+      "source_path": "\\\\?\\D:\\Development\\claude-certification\\claude-terminology\\.claude\\commands\\add-enriched-content.md",
+      "source_hash": "1bda4c371d927b537f1b0a7584eaa27662ac6a38bb4769c31fb941b2316f98db",
+      "dest_path": "\\\\?\\D:\\Development\\claude-certification\\claude-terminology\\.refact\\commands\\add-enriched-content.md",
+      "dest_hash": "1bda4c371d927b537f1b0a7584eaa27662ac6a38bb4769c31fb941b2316f98db",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-05-16T02:16:45.599820600Z",
+      "metadata": {
+        "original_name": "add-enriched-content"
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "command",
+      "source_path": "\\\\?\\D:\\Development\\claude-certification\\claude-terminology\\.claude\\commands\\add-page.md",
+      "source_hash": "c04b72afc079c2a9e2841ae90910923c2b7a4e5abe1b272e1fb22a19e1be12ce",
+      "dest_path": "\\\\?\\D:\\Development\\claude-certification\\claude-terminology\\.refact\\commands\\add-page.md",
+      "dest_hash": "c04b72afc079c2a9e2841ae90910923c2b7a4e5abe1b272e1fb22a19e1be12ce",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-05-16T02:16:45.613489300Z",
+      "metadata": {
+        "original_name": "add-page"
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "command",
+      "source_path": "\\\\?\\D:\\Development\\claude-certification\\claude-terminology\\.claude\\commands\\fix-ts.md",
+      "source_hash": "60d07c50d3e49eed588b02247fa3b04e2e1453e1f2492a65db2edc457ac89bf6",
+      "dest_path": "\\\\?\\D:\\Development\\claude-certification\\claude-terminology\\.refact\\commands\\fix-ts.md",
+      "dest_hash": "60d07c50d3e49eed588b02247fa3b04e2e1453e1f2492a65db2edc457ac89bf6",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-05-16T02:16:45.624018900Z",
+      "metadata": {
+        "original_name": "fix-ts"
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "command",
+      "source_path": "\\\\?\\D:\\Development\\claude-certification\\claude-terminology\\.claude\\commands\\typecheck.md",
+      "source_hash": "60e5d38e52165a7670fc29f73b7909b8ad7374d3e30b228d3745e33e4b830a20",
+      "dest_path": "\\\\?\\D:\\Development\\claude-certification\\claude-terminology\\.refact\\commands\\typecheck.md",
+      "dest_hash": "60e5d38e52165a7670fc29f73b7909b8ad7374d3e30b228d3745e33e4b830a20",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-05-16T02:16:45.633285500Z",
+      "metadata": {
+        "original_name": "typecheck"
+      }
+    }
+  ],
+  "last_report": {
+    "generated_at": "2026-05-16T02:16:46.514139700+00:00",
+    "completed_at": "2026-05-16T02:16:46.525827800+00:00",
+    "reported_scopes": [
+      {
+        "scope_kind": "project",
+        "scope_id": "e2de329a1a652f3a",
+        "label": "project workspace"
+      }
+    ],
+    "reported_sources": [
+      {
+        "competitor": "claude_code",
+        "scope_kind": "project",
+        "scope_id": "e2de329a1a652f3a",
+        "source_label": ".claude"
+      },
+      {
+        "competitor": "open_code",
+        "scope_kind": "project",
+        "scope_id": "e2de329a1a652f3a",
+        "source_label": ".opencode"
+      },
+      {
+        "competitor": "kilo_code",
+        "scope_kind": "project",
+        "scope_id": "e2de329a1a652f3a",
+        "source_label": ".kilo"
+      },
+      {
+        "competitor": "kilo_code",
+        "scope_kind": "project",
+        "scope_id": "e2de329a1a652f3a",
+        "source_label": ".kilocode"
+      },
+      {
+        "competitor": "continue_dev",
+        "scope_kind": "project",
+        "scope_id": "e2de329a1a652f3a",
+        "source_label": ".continue"
+      }
+    ],
+    "discovered_candidates": 6,
+    "status_counts": {
+      "unchanged": 6
+    },
+    "competitor_counts": {
+      "claude_code": {
+        "discovered": 6,
+        "created": 0,
+        "updated": 0,
+        "unchanged": 6,
+        "stale": 0,
+        "conflicts": 0,
+        "user_modified": 0,
+        "unsupported": 0,
+        "errors": 0
+      }
+    },
+    "kind_counts": {
+      "command": {
+        "discovered": 6,
+        "created": 0,
+        "updated": 0,
+        "unchanged": 6,
+        "stale": 0,
+        "conflicts": 0,
+        "user_modified": 0,
+        "unsupported": 0,
+        "errors": 0
+      }
+    },
+    "top_issues": []
+  }
+}
