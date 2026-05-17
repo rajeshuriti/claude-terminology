@@ -22,6 +22,7 @@ import { ContextLabPage } from '@/pages/ContextLabPage';
 import { FailureLabPage } from '@/pages/FailureLabPage';
 import { CheatSheetPage } from '@/pages/CheatSheetPage';
 import { CommandCenterPage } from '@/pages/CommandCenterPage';
+import { AISecurityPage } from '@/pages/AISecurityPage';
 
 export default function App() {
   return (
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/failure-lab" element={<FailureLabPage />} />
           <Route path="/cheat-sheets" element={<CheatSheetPage />} />
           <Route path="/command-center" element={<CommandCenterPage />} />
+          <Route path="/security-lab" element={<AISecurityPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

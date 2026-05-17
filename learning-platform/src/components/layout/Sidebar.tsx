@@ -27,6 +27,7 @@ const ACTIVE_GRADIENTS: Record<string, string> = {
   '/failure-lab':    'from-red-600 to-orange-500',
   '/cheat-sheets':   'from-sky-600 to-cyan-500',
   '/command-center': 'from-violet-600 to-indigo-500',
+  '/security-lab':   'from-red-600 to-orange-600',
 };
 
 function activeClass(path: string): string {
@@ -96,7 +97,8 @@ const navGroups: NavGroup[] = [
   {
     label: 'Labs',
     items: [
-      { path: '/failure-lab', emoji: '🔥', label: 'AI Failure Lab' },
+      { path: '/failure-lab',  emoji: '🔥', label: 'AI Failure Lab' },
+      { path: '/security-lab', emoji: '🛡️', label: 'AI Security Lab' },
     ],
   },
 ];
