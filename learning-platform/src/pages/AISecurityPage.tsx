@@ -7,7 +7,7 @@ import {
 import { useAppStore } from '@/store/appStore';
 import type {
   SecuritySectionId, SecuritySeverity, RiskLevel,
-  AttackFlow, GoodBad, RedBlueScenario, IncidentStep, ChaosScenario,
+  AttackFlow, GoodBad, IncidentStep,
 } from '@/data/aiSecurityData';
 import {
   securitySections, mcpRiskEntries, threatEntries,
@@ -413,7 +413,7 @@ function RedBlueArena({ dm }: { dm: boolean }) {
     <div>
       {/* Scenario selector */}
       <div className="flex gap-2 mb-4">
-        {redBlueScenarios.map((s, i) => (
+        {redBlueScenarios.map((_, i) => (
           <button key={i} onClick={() => { setScenarioIdx(i); setSelected(null); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${scenarioIdx === i ? 'bg-red-500 text-white' : dm ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
             {i + 1}
